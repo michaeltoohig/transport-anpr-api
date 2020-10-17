@@ -1,8 +1,17 @@
 # ANPR
 keras==2.4.3
-opencv-python==4.4.0
+opencv-python==4.4.0.44
 tensorflow==2.3.1
+sklearn
 
 # Web
 fastapi
 uvicorn
+python-multipart
+
+# Typing
+mypy==0.770
+
+# Dev
+pytest==5.4.1
+pytest-cov==2.8.1

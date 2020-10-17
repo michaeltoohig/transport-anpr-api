@@ -1,9 +1,9 @@
 #! /usr/bin/env sh
 set -e
 
-if [ -f ./main.py ]; then
-    DEFAULT_MODULE_NAME=main
-elif [ -f ./main.py ]; then
+if [ -f ./app/main.py ]; then
+    DEFAULT_MODULE_NAME=app.main
+elif [ -f /app/main.py ]; then
     DEFAULT_MODULE_NAME=main
 fi
 MODULE_NAME=${MODULE_NAME:-$DEFAULT_MODULE_NAME}
