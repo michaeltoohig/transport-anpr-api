@@ -3,6 +3,10 @@
 set -e
 
 mkdir data -p
+mkdir data/yolov3 -P
+
+wget -c -N https://pjreddie.com/media/files/yolov3.weights -P data/yolov3/
+
 # mkdir data/lp-detector -p
 # mkdir data/ocr -p
 # mkdir data/vehicle-detector -p

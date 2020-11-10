@@ -18,7 +18,7 @@ def test_plate_prediction(
         )
     assert response.status_code == 200
     content = response.json()
-    assert content["prediction"]
+    assert content["prediction"]  # == "3953"  # should be "B3953" but have to figure how to detect the "B" in negative
 
 
 def test_plate_prediction_fails(

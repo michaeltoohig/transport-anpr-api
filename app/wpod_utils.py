@@ -1,6 +1,7 @@
-from os.path import splitext
 import cv2
 import numpy as np
+from keras.models import model_from_json
+from sklearn.preprocessing import LabelEncoder
 
 class Label:
     def __init__(self, cl=-1, tl=np.array([0., 0.]), br=np.array([0., 0.]), prob=None):
@@ -120,17 +121,23 @@ def find_T_matrix(pts, t_pts):
 
 
 def getRectPts(tlx, tly, brx, bry):
+    # Will attempt to crop the rect by removing a small amount all sides to remove the VU border on plate
+    # trimX = brx * 0.03
+    # trimY = bry * 0.08
+    # tlx = tlx + trimX
+    # brx = brx - trimX
+    # tly = tly + trimY
+    # bry = bry - trimY
     return np.matrix([[tlx, brx, brx, tlx], [tly, tly, bry, bry], [1, 1, 1, 1]], dtype=float)
 
 
 # Reconstruction function from predict value into plate crpoped from image
 def reconstruct(I, Iresized, Yr, lp_threshold):
     # 4 max-pooling layers, stride = 2
-    net_stride = 2**4
-    side = ((208 + 40)/2)/net_stride
+    net_stride = 2 ** 4
+    side = ((208 + 40) / 2) / net_stride
 
     # One line and two lines license plate size
-    # TODO investigate for VU plates
     one_line = (470, 110)
     two_lines = (280, 200)
 
@@ -182,11 +189,12 @@ def reconstruct(I, Iresized, Yr, lp_threshold):
     # LP size and type
     out_size, lp_type = (two_lines, 2) if ((final_labels_frontal[0].wh()[0] / final_labels_frontal[0].wh()[1]) < 1.7) else (one_line, 1)
 
+    print(out_size, lp_type)
     TLp = []
     Cor = []
     if len(final_labels):
         final_labels.sort(key=lambda x: x.prob(), reverse=True)
-        for _, label in enumerate(final_labels):
+        for label in final_labels:
             t_ptsh = getRectPts(0, 0, out_size[0], out_size[1])
             ptsh = np.concatenate((label.pts * getWH(I.shape).reshape((2, 1)), np.ones((1, 4))))
             H = find_T_matrix(ptsh, t_ptsh)
@@ -196,18 +204,51 @@ def reconstruct(I, Iresized, Yr, lp_threshold):
     return final_labels, TLp, lp_type, Cor
   
 
-def detect_plate(model, I, max_dim, lp_threshold):
-    min_dim_img = min(I.shape[:2])
+def detect_plate(net, vi, max_dim, lp_threshold):
+    """
+    Detects plate from an image containing a vehicle. 
+    Image should be cropped to contain just the vehicle if possible.
+
+    Args:
+      - net: wpod_net
+      - vi: vehicle image
+      - max_dim: max dimension of image size to search for plate... I think?
+      - lp_threshold: threshold float to count a plate detection
+    """
+    min_dim_img = min(vi.shape[:2])
     factor = float(max_dim) / min_dim_img
-    w, h = (np.array(I.shape[1::-1], dtype=float) * factor).astype(int).tolist()
-    Iresized = cv2.resize(I, (w, h))
-    T = Iresized.copy()
+    w, h = (np.array(vi.shape[1::-1], dtype=float) * factor).astype(int).tolist()
+    # cv2.imshow("a", vi)
+    vi_resized = cv2.resize(vi, (w, h))
+    # cv2.imshow("b", vi_resized)
+    T = vi_resized.copy()
     T = T.reshape((1, T.shape[0], T.shape[1], T.shape[2]))
-    Yr = model.predict(T)
+    Yr = net.predict(T)
     Yr = np.squeeze(Yr)
-    #print(Yr.shape)
-    L, TLp, lp_type, Cor = reconstruct(I, Iresized, Yr, lp_threshold)
+
+    L, TLp, lp_type, Cor = reconstruct(vi, vi_resized, Yr, lp_threshold)
+    
+    # cv2.rectangle(original_vi, (444, 356), (150, 260), 0xff66, 2)
+    # cv2.imshow("C", original_vi)
+    # cv2.waitKey(0)
+    
     return L, TLp, lp_type, Cor
 
 
+def get_plate(img, Dmax=608, Dmin = 608):
+    vehicle_img = preprocess_image(img)
+    ratio = float(max(vehicle_img.shape[:2])) / min(vehicle_img.shape[:2])
+    side = int(ratio * Dmin)
+    bound_dim = min(side, Dmax)
+    _, plate_img, _, cor = detect_plate(wpod_net, vehicle_img, bound_dim, lp_threshold=0.5)
+    return plate_img, cor
 
+
+def load_wpod_net():
+    wpod_net_path = "data/wpod-net.json"
+    wpod_weights_path = "data/wpod-net.h5"
+
+    wpod_net = model_from_json(open(wpod_net_path, "r").read(), custom_objects={})
+    wpod_net.load_weights(wpod_weights_path)
+    print("[INFO] wpod_net loaded successfully...")
+    return wpod_net
