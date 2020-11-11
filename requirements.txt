@@ -9,6 +9,9 @@ fastapi
 uvicorn
 python-multipart
 
+# Persistence
+aioredis
+
 # Typing
 mypy==0.770
 

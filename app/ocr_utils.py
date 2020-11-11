@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+from keras.models import model_from_json
+from sklearn.preprocessing import LabelEncoder
 
 
 # Create sort_contours() function to grab the contour of each digit from left to right

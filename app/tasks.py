@@ -1,7 +1,7 @@
 # from raven import Client
 
 from app.core.celery_app import celery_app
-from app.core.config import settings
+from app.yolo_utils2 import detect_objects
 
 # client_sentry = Client(settings.SENTRY_DSN)
 

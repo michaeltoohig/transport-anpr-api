@@ -35,3 +35,8 @@ OpenALPR
 https://github.com/openalpr/openalpr
 https://github.com/openalpr/train-detector
 https://github.com/openalpr/train-ocr
+
+
+Redis w/ FastAPI inspiration
+
+https://github.com/leonh/redis-streams-fastapi-chat/blob/master/chat.py

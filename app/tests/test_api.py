@@ -7,6 +7,13 @@ from fastapi.testclient import TestClient
 # from app.tests.utils.business import create_random_business
 
 
+def test_api(client: TestClient) -> None:
+    resp = client.get("/testing")
+    assert resp.status_code == 200
+    content = resp.json()
+    assert content
+
+
 def test_plate_prediction(
     client: TestClient
 ) -> None:

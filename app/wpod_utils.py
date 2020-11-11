@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from keras.models import model_from_json
-from sklearn.preprocessing import LabelEncoder
+
 
 class Label:
     def __init__(self, cl=-1, tl=np.array([0., 0.]), br=np.array([0., 0.]), prob=None):
