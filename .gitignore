@@ -1,6 +1,7 @@
 __pycache__/
 .venv/
 .coverage
+.vscode/
 
 /data/yolov3
 

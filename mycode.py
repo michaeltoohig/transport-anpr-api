@@ -1,9 +1,10 @@
 import cv2 as cv
-from app.yolo_utils2 import get_yolo_net, detect_objects
-from app.main import get_plate, draw_box
+from app.yolo_utils2 import load_yolo_net, detect_objects
+from app.wpod_utils import get_plate 
+from app.other_utils import draw_box
 
-IMAGE_PATH = "./truck2.jpg"
-net, labels, colors, layer_names = get_yolo_net()
+IMAGE_PATH = "./bus1.jpg"
+net, labels, colors, layer_names = load_yolo_net()
 
 img = cv.imread(IMAGE_PATH)
 cv.imshow("Original", img)
