@@ -34,6 +34,7 @@ def test_upload_image_read_status(client: TestClient) -> None:
     content = response.json()
     assert content["status"] == "gotem"
 
+
 # def test_plate_prediction(
 #     client: TestClient
 # ) -> None:

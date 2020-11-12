@@ -5,6 +5,7 @@ import uuid
 from fastapi import APIRouter, Body, File, UploadFile
 
 from app.config import IMAGE_DIRECTORY
+from app.worker import test_celery
 from app.core.db import get_redis_pool
 
 router = APIRouter()
@@ -45,3 +46,17 @@ async def get_image(
 
     value = await pool.get(key)
     return dict(status=value)
+
+
+@router.get("/test-celery/{word}")
+async def test_celery_task(word: str):
+    test_celery.delay(word=word)
+    return True
+
+
+@router.get("/test-celery")
+async def status():
+    pool = await get_redis_pool()
+    resp = await pool.get('test')
+    print(resp)
+    return {"answer": resp}

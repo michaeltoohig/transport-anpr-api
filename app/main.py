@@ -1,10 +1,11 @@
 import contextvars
+from pathlib import Path
 
 import aioredis
 from fastapi import FastAPI
 
 from app.api.endpoints import router
-from app.config import REDIS_HOST, REDIS_PORT
+from app.config import REDIS_HOST, REDIS_PORT, IMAGE_DIRECTORY
 from app.yolo_utils2 import load_yolo_net
 from app.ocr_utils import load_ocr_net
 from app.wpod_utils import detect_plate, load_wpod_net
@@ -24,6 +25,9 @@ app.include_router(router)
 
 @app.on_event("startup")
 async def handle_startup():
+    if not Path(IMAGE_DIRECTORY).exists():
+        Path(IMAGE_DIRECTORY).mkdir()
+    
     try:
         pool = await aioredis.create_redis_pool(
             (REDIS_HOST, REDIS_PORT), encoding='utf-8', maxsize=20)
