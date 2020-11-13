@@ -26,6 +26,7 @@ def draw_box(image_path, cor, thickness=3):
     cv2.polylines(vehicle_image,[pts],True,(0,255,0),thickness)
     return vehicle_image
 
+# In yolo utils; not needed here or is this reuseable ?
 def draw_label_and_box(img, x, y, w, h, label: str):
     """
     This should be agnostic to the NN that asks for the box to be drawn... but the old function was heavily tied to the implementation.

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  {{ url_for("static", path="style.css") | css_script | safe }}
+</head>
+<body>
+  <main>
+    <h1>Title</h1>
+    <p>Some detials</p>
+    <hr/>
+
+    <div class="app" id="detect-app">
+      <input type="file" @change="onFileSelected" accept="image/*" class="input-file">
+      <button @click="onUpload">Upload</button>
+      <div v-if="taskId">
+        <span>Task: [[ taskId ]]</span>
+        <span>Result: [[ result ]]</span>
+        <img v-if="result.progress === 1" :src="result.image">
+      </div>
+    </div>
+  </main>
+  <script type="text/javascript">
+    var SERVER_HOST = "{{ SERVER_HOST }}"
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  {{ url_for("static", path="detect-app.js") | js_script | safe }}
+</body>
+</html>

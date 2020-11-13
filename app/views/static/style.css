@@ -1,0 +1,16 @@
+body {
+  color: #555;
+  background-color: rgb(242, 242, 241);
+}
+
+h1,
+h2,
+strong {
+  color: #333;
+}
+
+main {
+  max-width: 38rem;
+  padding: 1.5rem;
+  margin: auto;
+}

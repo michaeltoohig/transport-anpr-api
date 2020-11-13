@@ -1,5 +1,6 @@
 import os
 
+SERVER_HOST = "http://localhost:8000"
 IMAGE_DIRECTORY = "./_images"
 
 REDIS_HOST = os.environ.get("REDIS_HOST", 'localhost')

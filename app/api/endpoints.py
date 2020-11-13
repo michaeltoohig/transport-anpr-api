@@ -1,11 +1,12 @@
 from pathlib import Path
 import shutil
+from typing import Any
 import uuid
 
-from fastapi import APIRouter, Body, File, UploadFile
+from fastapi import APIRouter, Body, File, Request, UploadFile
 
 from app.config import IMAGE_DIRECTORY
-from app.worker import test_celery
+from app.worker import test_celery, run_yolo
 from app.core.db import get_redis_pool
 
 router = APIRouter()
@@ -13,39 +14,43 @@ router = APIRouter()
 
 def save_upload_file(upload_file: UploadFile) -> None:
     directory = uuid.uuid4()
-    destination = Path(IMAGE_DIRECTORY) / str(directory) / 'original.jpg' # TODO file extension handling
+    filename = 'original.jpg' # TODO file extension handling
+    destination = Path(IMAGE_DIRECTORY) / str(directory) / filename
     destination.parent.mkdir()
     try:
         with destination.open("wb") as buffer:
             shutil.copyfileobj(upload_file.file, buffer)
     finally:
         upload_file.file.close()
-    return directory
+    return str(directory), filename
 
 
-@router.post("/detect/vehicles")
-async def post_image(
-    token: str = Body(...),
+@router.post("/detect")
+async def post_detect_image(
+    request: Request,
     image: UploadFile = File(...),
-):
-    pool = await get_redis_pool()
-
-    key = save_upload_file(image)
-    print(key)
+) -> Any:
+    #pool = await get_redis_pool()
+    #await pool.set(str(key), 'gotem')
     
-    await pool.set(str(key), 'gotem')
-    return dict(key=str(key))
+    taskId, filename = save_upload_file(image)
+    task = run_yolo.apply_async(kwargs={"filename": filename}, task_id=taskId)
+
+    return dict(taskId=task.id, statusUrl=request.url_for('detect-results', taskId=task.id))
         
 
-
-@router.get("/detect/vehicles/{key}")
-async def get_image(
-    key: str,
-):
-    pool = await get_redis_pool()
-
-    value = await pool.get(key)
-    return dict(status=value)
+@router.get("/detect/{taskId}", name="detect-results")
+async def get_detect(
+    request: Request,
+    taskId: str,
+    # token: str = Body(...),
+) -> Any:
+    job = run_yolo.AsyncResult(taskId)
+    if job.state == 'PROGRESS':
+        return dict(status=job.state, progress=job.result['current'] / job.result['total'])
+    elif job.state == 'SUCCESS':
+        image = request.url_for("images", path=f"{taskId}/detections.jpg")
+        return dict(status=job.status, progress=1, image=image)
 
 
 @router.get("/test-celery/{word}")

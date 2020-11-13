@@ -1,6 +1,9 @@
+from pathlib import Path
 import numpy as np
 import cv2 as cv
 import time
+
+# net, labels, colors, layer_names = None, None, None, None
 
 
 def generate_boxes_confidences_classids(outs, height, width, tconf):
@@ -33,7 +36,8 @@ def generate_boxes_confidences_classids(outs, height, width, tconf):
 
     return boxes, confidences, classids
 
-def detect_objects(net, layer_names, img, show_time: bool=False, confidence_threshold: float=0.5, threshold: float=0.3):
+def detect_objects(net, labels, layer_names, colors, img, show_time: bool=False, confidence_threshold: float=0.5, threshold: float=0.3):
+    
     # Contructing a blob from the input image
     blob = cv.dnn.blobFromImage(img, 1 / 255.0, (416, 416), swapRB=True, crop=False)
 
@@ -51,10 +55,13 @@ def detect_objects(net, layer_names, img, show_time: bool=False, confidence_thre
     height, width = img.shape[:2]
     # Generate the boxes, confidences, and classIDs
     boxes, confidences, classids = generate_boxes_confidences_classids(outs, height, width, confidence_threshold)
-    
     # Apply Non-Maxima Suppression to suppress overlapping bounding boxes
     idxs = cv.dnn.NMSBoxes(boxes, confidences, confidence_threshold, threshold)
 
+    if boxes is None or confidences is None or idxs is None or classids is None:
+        # Nothing detected
+        return None
+    
     detections = []
     if len(idxs) > 0:
         for i in idxs.flatten():
@@ -63,6 +70,15 @@ def detect_objects(net, layer_names, img, show_time: bool=False, confidence_thre
             w, h = boxes[i][2], boxes[i][3]
             classId = classids[i]
             confidence = confidences[i]
+
+            # Get the unique color for this class
+            color = [int(c) for c in colors[classids[i]]]
+
+            # Draw the bounding box rectangle and label on the image
+            cv.rectangle(img, (x, y), (x+w, y+h), color, 2)
+            text = "{}: {:4f}".format(labels[classids[i]], confidences[i])
+            cv.putText(img, text, (x, y-5), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            
             detections.append(dict(
                 x=x,
                 y=y,
@@ -71,7 +87,7 @@ def detect_objects(net, layer_names, img, show_time: bool=False, confidence_thre
                 classId=classId,
                 confidence=confidence,
             ))
-    return detections
+    return img, detections
 
 # define classes we want to record
 VEHICLE_CLASSES = ['car', 'truck', 'bus', 'motorbike']
