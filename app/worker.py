@@ -38,7 +38,7 @@ class NNetTask(Task):
 @celery_app.task(base=NNetTask, bind=True, acks_late=True)
 def run_yolo(self, filename: str) -> None:
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
-    current_task.update_state(state='PROGRESS', meta={'state': 'Loading Image...'})
+    current_task.update_state(state='PROGRESS', meta={'progress': 0.1})
 
     img = cv.imread(str(filepath))  # TODO move this into a helper function in yolo utils to hanle using cv
     img, detections = detect_objects(self.yolo_net, self.yolo_labels, self.layer_names, self.colors, img)

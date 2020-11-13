@@ -62,7 +62,7 @@ var elem = new Vue({
         .catch(error => {
           console.error('There was an error!', error)
         })
-      if (!!this.taskId && this.progress >= 0.9) {
+      if (!!this.taskId && this.progress < 1) {
         console.log('Done')
       } else {
         if (this.taskId != null) {

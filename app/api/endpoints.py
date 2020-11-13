@@ -47,7 +47,7 @@ async def get_detect(
 ) -> Any:
     job = run_yolo.AsyncResult(taskId)
     if job.state == 'PROGRESS':
-        return dict(status=job.state, progress=job.result['current'] / job.result['total'])
+        return dict(status=job.state, progress=job.result['progress'])
     elif job.state == 'SUCCESS':
         image = request.url_for("images", path=f"{taskId}/detections.jpg")
         return dict(status=job.status, progress=1, image=image)
