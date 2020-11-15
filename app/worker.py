@@ -8,7 +8,19 @@ from celery import current_task, Task
 from app.config import IMAGE_DIRECTORY
 from app.core.celery_app import celery_app
 from app.yolo_utils2 import load_yolo_net, detect_objects, draw_detections, crop_detections
-from app.wpod_utils import load_wpod_net, get_plate
+from app.wpod_utils import load_wpod_net, get_plate, draw_box, preprocess_image
+
+
+from celery.signals import worker_process_init
+
+wpod_net = None
+
+
+@worker_process_init.connect()
+def init_worker_process(**kwargs):
+    global wpod_net
+    wpod_net = load_wpod_net()
+
 
 # client_sentry = Client(settings.SENTRY_DSN)
 
@@ -34,8 +46,8 @@ class NNetTask(Task):
         self.yolo_labels = yolo_labels
         self.layer_names = layer_names
         self.colors = colors
-        wpod_net = load_wpod_net()
-        self.wpod_net = wpod_net
+        # wpod_net = load_wpod_net()
+        # self.wpod_net = wpod_net
 
 
 @celery_app.task(base=NNetTask, bind=True, acks_late=True)
@@ -58,6 +70,13 @@ def run_yolo(self, filename: str) -> None:
         cv.imwrite(str(save_directory / f"{num+1}.jpg"), image)
 
 
-@celery_app.task(base=NNetTask, bind=True, acks_late=True)
+@celery_app.task(base=NNetTask, throws=(AssertionError), bind=True, acks_late=True)
 def run_wpod(self, filename: str) -> None:
-    
+    filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
+    current_task.update_state(state='PROGRESS', meta={'progress': 0.1})
+
+    img = cv.imread(str(filepath))
+    plateImg, cor = get_plate(wpod_net, img)  # XXX can raise AssertionError if no plate is found
+    vehicleImg = draw_box(img, cor)
+    cv.imwrite(str(filepath.parent / "plate.jpg"), plateImg[0] * 255)
+    cv.imwrite(str(filepath.parent / "vehicle.jpg"), vehicleImg * 255)

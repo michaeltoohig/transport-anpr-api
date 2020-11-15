@@ -1,5 +1,5 @@
 var elem = new Vue({
-  el: "#detect-app",
+  el: "#detect-plate-app",
   delimiters: ["[[", "]]"],
   data: {
     selectedFile: null,
@@ -21,7 +21,7 @@ var elem = new Vue({
         method: "POST",
         body: fd,
       };
-      fetch(`${API_STR}/detect/vehicles`, requestOptions)
+      fetch(`${API_STR}/detect/plate`, requestOptions)
         .then(async response => {
           const data = await response.json()
 
@@ -44,7 +44,7 @@ var elem = new Vue({
       const requestOptions = {
         method: "GET",
       }
-      fetch(`${API_STR}/detect/vehicles/${this.taskId}`, requestOptions)
+      fetch(`${API_STR}/detect/plate/${this.taskId}`, requestOptions)
         .then(async response => {
           const data = await response.json()
 

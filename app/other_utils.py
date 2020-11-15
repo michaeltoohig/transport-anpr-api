@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-
+# in wpod_utils now
 def preprocess_image(img, resize=False):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     # img = cv2.bitwise_not(img)  # TODO determine if bitwise_not is required if plate is white on black or reverse

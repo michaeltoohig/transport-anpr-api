@@ -7,7 +7,7 @@ import uuid
 from fastapi import APIRouter, Body, File, Request, UploadFile
 
 from app.config import IMAGE_DIRECTORY
-from app.worker import test_celery, run_yolo
+from app.worker import test_celery, run_yolo, run_wpod
 from app.core.db import get_redis_pool
 
 router = APIRouter()
@@ -32,7 +32,7 @@ def get_upload_file_detection(taskId: str, objNum: int) -> None:
     return str(file)
 
 
-@router.post("/detect")
+@router.post("/detect/vehicles")
 async def post_detect_image(
     request: Request,
     image: UploadFile = File(...),
@@ -43,10 +43,10 @@ async def post_detect_image(
     taskId, filename = save_upload_file(image)
     task = run_yolo.apply_async(kwargs={"filename": filename}, task_id=taskId)
 
-    return dict(taskId=task.id, statusUrl=request.url_for('detect-results', taskId=task.id))
+    return dict(taskId=task.id, statusUrl=request.url_for('detect-vehicles-results', taskId=task.id))
         
 
-@router.get("/detect/{taskId}", name="detect-results")
+@router.get("/detect/vehicles/{taskId}", name="detect-vehicles-results")
 async def get_detect(
     request: Request,
     taskId: str,
@@ -65,15 +65,52 @@ async def get_detect(
         return dict(status=job.status, progress=1, image=image, objs=objs)
 
 
-@router.post("/detect/{taskId}/{objNum}/plate")
-async def post_detect_plate(
+# @router.post("/detect/{taskId}/{objNum}/plate")
+# async def post_detect_plate(
+#     request: Request,
+#     taskId: str,
+#     objNum: int,
+#     # token: str = Body(...),
+# ) -> Any:
+#     file = get_upload_file_detection(taskId, objNum)
+#     from wpod_utils import load_wpod_net, get_plate
+#     wpod_net = load_wpod_net()
+#     plateImg, cor = get_plate(file)
+
+
+@router.post("/detect/plate")
+async def post_detect_plate_image(
+    request: Request,
+    image: UploadFile = File(...),
+) -> Any:
+    #pool = await get_redis_pool()
+    #await pool.set(str(key), 'gotem')
+    
+    taskId, filename = save_upload_file(image)
+    # run_wpod.run(filename=filename)
+    task = run_wpod.apply_async(kwargs={"filename": filename}, task_id=taskId)
+
+    return dict(taskId=task.id, statusUrl=request.url_for('detect-plate-results', taskId=task.id))
+        
+
+@router.get("/detect/plate/{taskId}", name="detect-plate-results")
+async def get_detect(
     request: Request,
     taskId: str,
-    objNum: int,
     # token: str = Body(...),
 ) -> Any:
-    file = get_upload_file_detection(taskId, objNum)
-    task = run_
+    job = run_wpod.AsyncResult(taskId)
+    if job.state == 'PROGRESS':
+        return dict(status=job.state, progress=job.result['progress'])
+    elif job.state == 'SUCCESS':
+        vehicle_image = request.url_for("images", path=f"{taskId}/vehicle.jpg")
+        plate_image = request.url_for("images", path=f"{taskId}/plate.jpg")
+        return dict(status=job.status, progress=1, vehicle=vehicle_image, plate=plate_image)
+    else:
+        return dict(status="FAILED", progress=1)
+
+
+
 
 
 @router.get("/test-celery/{word}")

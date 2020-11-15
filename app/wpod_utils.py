@@ -189,7 +189,6 @@ def reconstruct(I, Iresized, Yr, lp_threshold):
     # LP size and type
     out_size, lp_type = (two_lines, 2) if ((final_labels_frontal[0].wh()[0] / final_labels_frontal[0].wh()[1]) < 1.7) else (one_line, 1)
 
-    print(out_size, lp_type)
     TLp = []
     Cor = []
     if len(final_labels):
@@ -226,15 +225,37 @@ def detect_plate(net, img, max_dim, lp_threshold):
     L, TLp, lp_type, Cor = reconstruct(img, img_resized, Yr, lp_threshold)
     return L, TLp, lp_type, Cor
 
+def preprocess_image(img, resize=False):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # img = cv2.bitwise_not(img)  # TODO determine if bitwise_not is required if plate is white on black or reverse
+    img = img / 255
+    if resize:
+        img = cv2.resize(img, (224,224))
+    return img
 
-def get_plate(img, Dmax=608, Dmin = 608):
+def draw_box(image_path, cor, thickness=3): 
+    pts=[]  
+    x_coordinates=cor[0][0]
+    y_coordinates=cor[0][1]
+    # store the top-left, top-right, bottom-left, bottom-right 
+    # of the plate license respectively
+    for i in range(4):
+        pts.append([int(x_coordinates[i]),int(y_coordinates[i])])
+    
+    pts = np.array(pts, np.int32)
+    pts = pts.reshape((-1,1,2))
+    vehicle_image = preprocess_image(image_path)
+    
+    cv2.polylines(vehicle_image,[pts],True,(0,255,0),thickness)
+    return vehicle_image
+
+def get_plate(net, img, Dmax=608, Dmin = 608):
     vehicle_img = preprocess_image(img)
     ratio = float(max(vehicle_img.shape[:2])) / min(vehicle_img.shape[:2])
     side = int(ratio * Dmin)
     bound_dim = min(side, Dmax)
-    _, plate_img, _, cor = detect_plate(wpod_net, vehicle_img, bound_dim, lp_threshold=0.5)
+    _, plate_img, _, cor = detect_plate(net, vehicle_img, bound_dim, lp_threshold=0.5)
     return plate_img, cor
-
 
 def load_wpod_net():
     wpod_net_path = "data/wpod-net.json"

@@ -27,6 +27,21 @@
         </div>
       </div>
     </div>
+
+    <hr/>
+
+    <div class="app" id="detect-plate-app">
+      <input type="file" @change="onFileSelected" accept="image/*" class="input-file">
+      <button @click="onUpload">Upload</button>
+      <div v-if="taskId">
+        <span>Task: [[ taskId ]]</span>
+        <span>Result: [[ result ]]</span>
+        <div v-if="result.progress === 1">
+          <img :src="result.vehicle" width="200">
+          <img :src="result.plate" width="200">
+        </div>
+      </div>
+    </div>
   </main>
   <script type="text/javascript">
     var SERVER_HOST = "{{ SERVER_HOST }}"
@@ -34,5 +49,6 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
   {{ url_for("static", path="detect-app.js") | js_script | safe }}
+  {{ url_for("static", path="detect-plate-app.js") | js_script | safe }}
 </body>
 </html>
