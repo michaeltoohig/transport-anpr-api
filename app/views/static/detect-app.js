@@ -21,7 +21,7 @@ var elem = new Vue({
         method: "POST",
         body: fd,
       };
-      fetch(`/api/detect`, requestOptions)
+      fetch(`${API_STR}/detect`, requestOptions)
         .then(async response => {
           const data = await response.json()
 
@@ -44,7 +44,7 @@ var elem = new Vue({
       const requestOptions = {
         method: "GET",
       }
-      fetch(`/api/detect/${this.taskId}`, requestOptions)
+      fetch(`${API_STR}/detect/${this.taskId}`, requestOptions)
         .then(async response => {
           const data = await response.json()
 
@@ -62,7 +62,7 @@ var elem = new Vue({
         .catch(error => {
           console.error('There was an error!', error)
         })
-      if (!!this.taskId && this.progress < 1) {
+      if (!!this.taskId && this.progress === 1) {
         console.log('Done')
       } else {
         if (this.taskId != null) {

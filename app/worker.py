@@ -7,7 +7,8 @@ from celery import current_task, Task
 
 from app.config import IMAGE_DIRECTORY
 from app.core.celery_app import celery_app
-from app.yolo_utils2 import load_yolo_net, detect_objects
+from app.yolo_utils2 import load_yolo_net, detect_objects, draw_detections, crop_detections
+from app.wpod_utils import load_wpod_net, get_plate
 
 # client_sentry = Client(settings.SENTRY_DSN)
 
@@ -33,6 +34,8 @@ class NNetTask(Task):
         self.yolo_labels = yolo_labels
         self.layer_names = layer_names
         self.colors = colors
+        wpod_net = load_wpod_net()
+        self.wpod_net = wpod_net
 
 
 @celery_app.task(base=NNetTask, bind=True, acks_late=True)
@@ -41,6 +44,20 @@ def run_yolo(self, filename: str) -> None:
     current_task.update_state(state='PROGRESS', meta={'progress': 0.1})
 
     img = cv.imread(str(filepath))  # TODO move this into a helper function in yolo utils to hanle using cv
-    img, detections = detect_objects(self.yolo_net, self.yolo_labels, self.layer_names, self.colors, img)
-    detectionsFilepath = filepath.parent / 'detections.jpg'
-    cv.imwrite(str(detectionsFilepath), img)
+    detections = detect_objects(self.yolo_net, self.yolo_labels, self.layer_names, self.colors, img)
+
+    detections_img = draw_detections(img.copy(), detections, self.colors, self.yolo_labels)
+    save_path = filepath.parent / 'detections.jpg'
+    cv.imwrite(str(save_path), detections_img)
+
+    detection_images = crop_detections(img, detections)
+    save_directory = filepath.parent / "objects" 
+    if not save_directory.exists():
+        save_directory.mkdir()
+    for num, image in enumerate(detection_images):
+        cv.imwrite(str(save_directory / f"{num+1}.jpg"), image)
+
+
+@celery_app.task(base=NNetTask, bind=True, acks_late=True)
+def run_wpod(self, filename: str) -> None:
+    

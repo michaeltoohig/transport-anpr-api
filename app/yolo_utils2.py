@@ -71,13 +71,14 @@ def detect_objects(net, labels, layer_names, colors, img, show_time: bool=False,
             classId = classids[i]
             confidence = confidences[i]
 
-            # Get the unique color for this class
-            color = [int(c) for c in colors[classids[i]]]
+            # XXX move this out, just get detections don't draw or do unnecessary work here
+            # # Get the unique color for this class
+            # color = [int(c) for c in colors[classids[i]]]
 
-            # Draw the bounding box rectangle and label on the image
-            cv.rectangle(img, (x, y), (x+w, y+h), color, 2)
-            text = "{}: {:4f}".format(labels[classids[i]], confidences[i])
-            cv.putText(img, text, (x, y-5), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            # # Draw the bounding box rectangle and label on the image
+            # cv.rectangle(img, (x, y), (x+w, y+h), color, 2)
+            # text = "{}: {:4f}".format(labels[classids[i]], confidences[i])
+            # cv.putText(img, text, (x, y-5), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
             
             detections.append(dict(
                 x=x,
@@ -87,7 +88,39 @@ def detect_objects(net, labels, layer_names, colors, img, show_time: bool=False,
                 classId=classId,
                 confidence=confidence,
             ))
-    return img, detections
+    return detections
+
+def draw_detections(img, detections, colors, labels):
+    for obj in detections:
+        classId = obj.get("classId")
+        confidence = obj.get("confidence")
+        x = obj.get("x")
+        y = obj.get("y")
+        w = obj.get("w")
+        h = obj.get("h")
+        
+        # Get the unique color for this class
+        color = [int(c) for c in colors[classId]]
+
+        # Draw the bounding box rectangle and label on the main image
+        cv.rectangle(img, (x, y), (x+w, y+h), color, 2)
+        text = "{}: {:4f}".format(labels[classId], confidence)
+        cv.putText(img, text, (x, y-5), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+    return img
+
+def crop_detections(img, detections):
+    images = []
+    for obj in detections:
+        classId = obj.get("classId")
+        confidence = obj.get("confidence")
+        x = obj.get("x")
+        y = obj.get("y")
+        w = obj.get("w")
+        h = obj.get("h")
+        # Crop the main image for each detection and save
+        crop = img[y:y+h, x:x+w]
+        images.append(crop)
+    return images
 
 # define classes we want to record
 VEHICLE_CLASSES = ['car', 'truck', 'bus', 'motorbike']

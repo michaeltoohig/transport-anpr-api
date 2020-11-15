@@ -204,34 +204,26 @@ def reconstruct(I, Iresized, Yr, lp_threshold):
     return final_labels, TLp, lp_type, Cor
   
 
-def detect_plate(net, vi, max_dim, lp_threshold):
+def detect_plate(net, img, max_dim, lp_threshold):
     """
     Detects plate from an image containing a vehicle. 
     Image should be cropped to contain just the vehicle if possible.
 
     Args:
       - net: wpod_net
-      - vi: vehicle image
+      - img: vehicle image
       - max_dim: max dimension of image size to search for plate... I think?
       - lp_threshold: threshold float to count a plate detection
     """
-    min_dim_img = min(vi.shape[:2])
+    min_dim_img = min(img.shape[:2])
     factor = float(max_dim) / min_dim_img
-    w, h = (np.array(vi.shape[1::-1], dtype=float) * factor).astype(int).tolist()
-    # cv2.imshow("a", vi)
-    vi_resized = cv2.resize(vi, (w, h))
-    # cv2.imshow("b", vi_resized)
-    T = vi_resized.copy()
+    w, h = (np.array(img.shape[1::-1], dtype=float) * factor).astype(int).tolist()
+    img_resized = cv2.resize(img, (w, h))
+    T = img_resized.copy()
     T = T.reshape((1, T.shape[0], T.shape[1], T.shape[2]))
     Yr = net.predict(T)
     Yr = np.squeeze(Yr)
-
-    L, TLp, lp_type, Cor = reconstruct(vi, vi_resized, Yr, lp_threshold)
-    
-    # cv2.rectangle(original_vi, (444, 356), (150, 260), 0xff66, 2)
-    # cv2.imshow("C", original_vi)
-    # cv2.waitKey(0)
-    
+    L, TLp, lp_type, Cor = reconstruct(img, img_resized, Yr, lp_threshold)
     return L, TLp, lp_type, Cor
 
 

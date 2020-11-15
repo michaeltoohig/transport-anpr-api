@@ -5,7 +5,7 @@ import aioredis
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
-from app.api.endpoints import router as api_router
+from app.api.endpoints_v1 import router as api_router
 from app.views.endpoints import router as web_router
 from app.config import REDIS_HOST, REDIS_PORT, IMAGE_DIRECTORY
 from app.yolo_utils2 import load_yolo_net
@@ -22,11 +22,11 @@ wpod_net = None
 
 
 app = FastAPI()
-app.include_router(api_router, prefix="/api")
+app.include_router(api_router, prefix="/api/v1")
 app.include_router(web_router, prefix="")
-# Mount additional applications
 app.mount("/static", StaticFiles(directory="app/views/static"), name="static")
 app.mount("/images", StaticFiles(directory=IMAGE_DIRECTORY), name="images")
+
 
 @app.on_event("startup")
 async def handle_startup():

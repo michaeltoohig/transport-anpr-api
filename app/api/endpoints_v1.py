@@ -1,6 +1,7 @@
+import os
 from pathlib import Path
 import shutil
-from typing import Any
+from typing import Any, Tuple
 import uuid
 
 from fastapi import APIRouter, Body, File, Request, UploadFile
@@ -12,7 +13,7 @@ from app.core.db import get_redis_pool
 router = APIRouter()
 
 
-def save_upload_file(upload_file: UploadFile) -> None:
+def save_upload_file(upload_file: UploadFile) -> Tuple[str, str]:
     directory = uuid.uuid4()
     filename = 'original.jpg' # TODO file extension handling
     destination = Path(IMAGE_DIRECTORY) / str(directory) / filename
@@ -23,6 +24,12 @@ def save_upload_file(upload_file: UploadFile) -> None:
     finally:
         upload_file.file.close()
     return str(directory), filename
+
+def get_upload_file_detection(taskId: str, objNum: int) -> None:
+    file = Path(IMAGE_DIRECTORY) / taskId / "objects" / f"{objNum}.jpg"
+    if not file.exists():
+        raise Exception
+    return str(file)
 
 
 @router.post("/detect")
@@ -50,7 +57,23 @@ async def get_detect(
         return dict(status=job.state, progress=job.result['progress'])
     elif job.state == 'SUCCESS':
         image = request.url_for("images", path=f"{taskId}/detections.jpg")
-        return dict(status=job.status, progress=1, image=image)
+        objs = []
+        for file in os.listdir(str(Path(IMAGE_DIRECTORY) / taskId / "objects")):
+            print(file)
+            url = request.url_for("images", path=f"{taskId}/objects/{file}")
+            objs.append(url)
+        return dict(status=job.status, progress=1, image=image, objs=objs)
+
+
+@router.post("/detect/{taskId}/{objNum}/plate")
+async def post_detect_plate(
+    request: Request,
+    taskId: str,
+    objNum: int,
+    # token: str = Body(...),
+) -> Any:
+    file = get_upload_file_detection(taskId, objNum)
+    task = run_
 
 
 @router.get("/test-celery/{word}")
