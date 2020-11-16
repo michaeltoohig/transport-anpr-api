@@ -23,7 +23,7 @@ def predict_from_model(image, model, labels):
 
 def get_prediction(plate_img):
     # Scales, calculates absolute values, and converts the result to 8-bit.
-    plate_image = cv2.convertScaleAbs(plate_img[0], alpha=(255.0))
+    plate_image = cv2.convertScaleAbs(plate_imgd, alpha=(255.0))
 
     # Convert to grayscale and blur the image
     gray = cv2.cvtColor(plate_image, cv2.COLOR_BGR2GRAY)
@@ -37,7 +37,7 @@ def get_prediction(plate_img):
 
     cont, _  = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # creat a copy version "test_roi" of plat_image to draw bounding box
+    # creat a copy version "test_roi" of plate_image to draw bounding box
     test_roi = plate_image.copy()
 
     # Initialize a list which will be used to append charater image

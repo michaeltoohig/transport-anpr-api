@@ -19,11 +19,11 @@
         <span>Task: [[ taskId ]]</span>
         <span>Result: [[ result ]]</span>
         <div v-if="result.progress === 1">
-          <img :src="result.image">
+          <img :src="result.image" width="600">
           <div v-if="result.objs.length > 0">
             <h2>Detected Objects</h2> 
             <div v-for="obj in result.objs" :key="obj.src">
-              <img :src="obj.src">
+              <img :src="obj.src" width="200">
               <button @click="detectPlate(obj.file)">Detect Plate</button>
             </div>
           </div>

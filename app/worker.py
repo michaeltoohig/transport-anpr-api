@@ -3,23 +3,26 @@ from pathlib import Path
 import time
 
 import cv2 as cv
+import numpy as np
 from celery import current_task, Task
 
 from app.config import IMAGE_DIRECTORY
 from app.core.celery_app import celery_app
 from app.yolo_utils2 import load_yolo_net, detect_objects, draw_detections, crop_detections
 from app.wpod_utils import load_wpod_net, get_plate, draw_box, preprocess_image
-
+from app.ocr_utils import load_ocr_net, get_prediction
 
 from celery.signals import worker_process_init
 
 wpod_net = None
-
+ocr_net = None
 
 @worker_process_init.connect()
 def init_worker_process(**kwargs):
     global wpod_net
     wpod_net = load_wpod_net()
+    global ocr_net
+    ocr_net, _ = load_ocr_net()
 
 
 # client_sentry = Client(settings.SENTRY_DSN)
@@ -73,10 +76,26 @@ def run_yolo(self, filename: str) -> None:
 @celery_app.task(base=NNetTask, throws=(AssertionError), bind=True, acks_late=True)
 def run_wpod(self, filename: str) -> None:
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
-    current_task.update_state(state='PROGRESS', meta={'progress': 0.1})
+    current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
 
     img = cv.imread(str(filepath))
     plateImg, cor = get_plate(wpod_net, img)  # XXX can raise AssertionError if no plate is found
     vehicleImg = draw_box(img, cor)
-    cv.imwrite(str(filepath.parent / "plate.jpg"), plateImg[0] * 255)
+    
+    img_float32 = np.float32(plateImg[0])
+    plateImg = cv.cvtColor(img_float32, cv.COLOR_RGB2BGR)
+    
+    img_float32 = np.float32(vehicleImg)
+    vehicleImg = cv.cvtColor(img_float32, cv.COLOR_RGB2BGR)
+
+    cv.imwrite(str(filepath.parent / "plate.jpg"), plateImg * 255)
     cv.imwrite(str(filepath.parent / "vehicle.jpg"), vehicleImg * 255)
+
+
+@celery_app.task(base=NNetTask, bind=True, acks_late=True)
+def run_ocr(self, filename: str) -> None:
+    filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
+    current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
+
+    img = cv.imread(str(filepath))
+    prediction = get_prediction(img)
