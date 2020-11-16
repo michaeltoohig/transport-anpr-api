@@ -67,7 +67,7 @@ def run_yolo(self, filename: str) -> None:
     if not save_directory.exists():
         save_directory.mkdir()
     for num, image in enumerate(detection_images):
-        cv.imwrite(str(save_directory / f"{num+1}.jpg"), image)
+        cv.imwrite(str(save_directory / f"{num+1}.jpg"), image)  # TODO fix cv2 error from some non-jpg
 
 
 @celery_app.task(base=NNetTask, throws=(AssertionError), bind=True, acks_late=True)

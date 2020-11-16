@@ -70,6 +70,9 @@ var elem = new Vue({
           setTimeout(() => { this.poll() }, 1000)
         }
       }
-    }
+    },
+    detectPlate (file) {
+      bus.$emit('send-vehicle-image', {taskId: this.taskId, file: file})
+    },
   }
 });

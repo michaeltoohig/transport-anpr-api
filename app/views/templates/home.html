@@ -22,7 +22,10 @@
           <img :src="result.image">
           <div v-if="result.objs.length > 0">
             <h2>Detected Objects</h2> 
-            <img v-for="src in result.objs" :key="src" :src="src">
+            <div v-for="obj in result.objs" :key="obj.src">
+              <img :src="obj.src">
+              <button @click="detectPlate(obj.file)">Detect Plate</button>
+            </div>
           </div>
         </div>
       </div>
@@ -48,6 +51,10 @@
     var API_STR = "/api/v1"
   </script>
   <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script>
+    const bus = new Vue();
+    
+  </script>
   {{ url_for("static", path="detect-app.js") | js_script | safe }}
   {{ url_for("static", path="detect-plate-app.js") | js_script | safe }}
 </body>

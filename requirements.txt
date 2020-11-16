@@ -9,10 +9,7 @@ sklearn
 fastapi
 uvicorn
 python-multipart
-
-# Persistence
 celery[redis]
-aioredis
 
 # Typing
 mypy==0.770

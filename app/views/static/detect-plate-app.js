@@ -8,10 +8,13 @@ var elem = new Vue({
     result: null,
   },
   methods: {
-    onFileSelected (event) {
+    resetData () {
       this.taskId = null
       this.progress = 0
       this.result = null
+    },
+    onFileSelected (event) {
+      this.resetData()
       this.selectedFile = event.target.files[0]
     },
     async onUpload () {
@@ -22,6 +25,29 @@ var elem = new Vue({
         body: fd,
       };
       fetch(`${API_STR}/detect/plate`, requestOptions)
+        .then(async response => {
+          const data = await response.json()
+
+          // check for error response
+          if (!response.ok) {
+            // get error message from body or default to response status
+            console.log(data)
+            const error = (data) || response.status
+            return Promise.reject(error)
+          }
+
+          this.taskId = data.taskId
+          this.poll()
+        })
+        .catch(error => {
+          console.error('There was an error!', error)
+        });
+    },
+    async onVehicleImage (sentData) {
+      const requestOptions = {
+        method: "POST",
+      };
+      fetch(`${API_STR}/detect/plate?taskId=${sentData.taskId}&file=${sentData.file}`, requestOptions)
         .then(async response => {
           const data = await response.json()
 
@@ -71,5 +97,11 @@ var elem = new Vue({
         }
       }
     }
+  },
+  mounted () {
+    bus.$on('send-vehicle-image', data => {
+      this.resetData()
+      this.onVehicleImage(data)
+    })
   }
 });
