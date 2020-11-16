@@ -1,24 +1,11 @@
-import contextvars
 from pathlib import Path
 
-import aioredis
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
 from app.api.endpoints_v1 import router as api_router
 from app.views.endpoints import router as web_router
 from app.config import REDIS_HOST, REDIS_PORT, IMAGE_DIRECTORY
-from app.yolo_utils2 import load_yolo_net
-from app.ocr_utils import load_ocr_net
-from app.wpod_utils import detect_plate, load_wpod_net
-
-
-# cvar_redis = contextvars.ContextVar('redis', default=None)
-
-
-# yolo_net, yolo_labels, layer_names = None, None, None
-ocr_net, ocr_labels = None, None
-wpod_net = None
 
 
 app = FastAPI()
@@ -42,10 +29,10 @@ async def handle_startup():
     #     print('cannot connect to redis on:', REDIS_HOST, REDIS_PORT)
     #     return
 
-    load_yolo_net()
-    # yolo_net, yolo_labels, layer_names = load_yolo_net()
-    ocr_net, ocr_labels = load_ocr_net()
-    wpod_net = load_wpod_net()
+    # load_yolo_net()
+    # # yolo_net, yolo_labels, layer_names = load_yolo_net()
+    # ocr_net, ocr_labels = load_ocr_net()
+    # wpod_net = load_wpod_net()
 
 
 @app.on_event("shutdown")

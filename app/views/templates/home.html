@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>ANPR API</title>
   {{ url_for("static", path="style.css") | css_script | safe }}
 </head>
 <body>
   <main>
-    <h1>Title</h1>
-    <p>Some detials</p>
+    <h1>ANPR API</h1>
+    <p>Test the API here.</p>
     <hr/>
 
     <div class="app" id="detect-app">
+      <h4>Detect Objects</h4>
       <input type="file" @change="onFileSelected" accept="image/*" class="input-file">
       <button @click="onUpload">Upload</button>
       <div v-if="taskId">
@@ -34,6 +35,7 @@
     <hr/>
 
     <div class="app" id="detect-plate-app">
+      <h4>Detect Number Plate</h4>
       <input type="file" @change="onFileSelected" accept="image/*" class="input-file">
       <button @click="onUpload">Upload</button>
       <div v-if="taskId">

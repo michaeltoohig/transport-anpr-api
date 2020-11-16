@@ -1,10 +1,10 @@
 # from raven import Client
 from pathlib import Path
-import time
 
 import cv2 as cv
 import numpy as np
 from celery import current_task, Task
+from celery.signals import worker_process_init
 
 from app.config import IMAGE_DIRECTORY
 from app.core.celery_app import celery_app
@@ -12,57 +12,48 @@ from app.yolo_utils2 import load_yolo_net, detect_objects, draw_detections, crop
 from app.wpod_utils import load_wpod_net, get_plate, draw_box, preprocess_image
 from app.ocr_utils import load_ocr_net, get_prediction
 
-from celery.signals import worker_process_init
+# client_sentry = Client(settings.SENTRY_DSN)
 
+yolo_net, yolo_labels, yolo_colors, yolo_layers = None, None, None, None
 wpod_net = None
-ocr_net = None
+ocr_net, ocr_labels = None, None
+
 
 @worker_process_init.connect()
 def init_worker_process(**kwargs):
+    global yolo_net, yolo_labels, yolo_colors, yolo_layers
+    yolo_net, yolo_labels, yolo_colors, yolo_layers = load_yolo_net()
     global wpod_net
     wpod_net = load_wpod_net()
-    global ocr_net
-    ocr_net, _ = load_ocr_net()
+    global ocr_net, ocr_labels
+    ocr_net, ocr_labels = load_ocr_net()
 
 
-# client_sentry = Client(settings.SENTRY_DSN)
-
-# redis_store = redis.Redis.from_url(CELERY_BACKEND_URI)
-
-
-@celery_app.task(acks_late=True)
-def test_celery(word: str) -> str:
-    # redis_store.set('test', word)
-    for i in range(1, 11):
-        time.sleep(1)
-        current_task.update_state(state='PROGRESS', meta={'process_percent': i*10})
-    return f"test task return {word}"
+class BaseTask(Task):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        """Log the exceptions."""
+        # client_sentry
+        super(BaseTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
 
-class NNetTask(Task):
-    """
-    Base task class to load the neural nets when the work starts.
-    """
-    def __init__(self):
-        yolo_net, yolo_labels, colors, layer_names = load_yolo_net()
-        self.yolo_net = yolo_net
-        self.yolo_labels = yolo_labels
-        self.layer_names = layer_names
-        self.colors = colors
-        # wpod_net = load_wpod_net()
-        # self.wpod_net = wpod_net
-
-
-@celery_app.task(base=NNetTask, bind=True, acks_late=True)
+@celery_app.task(
+    base=BaseTask,
+    bind=True, 
+    acks_late=True,
+    soft_time_limit=5,
+    time_limit=10,
+)
 def run_yolo(self, filename: str) -> None:
+
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
-    current_task.update_state(state='PROGRESS', meta={'progress': 0.1})
+    current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
 
     img = cv.imread(str(filepath))  # TODO move this into a helper function in yolo utils to hanle using cv
-    detections = detect_objects(self.yolo_net, self.yolo_labels, self.layer_names, self.colors, img)
+    detections = detect_objects(yolo_net, yolo_labels, yolo_layers, yolo_colors, img)
+    current_task.update_state(state="PROGRESS", meta={"progress": 0.7})
 
-    detections_img = draw_detections(img.copy(), detections, self.colors, self.yolo_labels)
-    save_path = filepath.parent / 'detections.jpg'
+    detections_img = draw_detections(img.copy(), detections, yolo_colors, yolo_labels)
+    save_path = filepath.parent / "detections.jpg"
     cv.imwrite(str(save_path), detections_img)
 
     detection_images = crop_detections(img, detections)
@@ -73,7 +64,14 @@ def run_yolo(self, filename: str) -> None:
         cv.imwrite(str(save_directory / f"{num+1}.jpg"), image)  # TODO fix cv2 error from some non-jpg
 
 
-@celery_app.task(base=NNetTask, throws=(AssertionError), bind=True, acks_late=True)
+@celery_app.task(
+    base=BaseTask,
+    bind=True,
+    acks_late=True,
+    soft_time_limmit=5,
+    time_limit=10,
+    throws=(AssertionError),
+)
 def run_wpod(self, filename: str) -> None:
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
     current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
@@ -92,7 +90,13 @@ def run_wpod(self, filename: str) -> None:
     cv.imwrite(str(filepath.parent / "vehicle.jpg"), vehicleImg * 255)
 
 
-@celery_app.task(base=NNetTask, bind=True, acks_late=True)
+@celery_app.task(
+    base=BaseTask,
+    bind=True, 
+    acks_late=True,
+    soft_time_limit=5,
+    time_limit=10,
+)
 def run_ocr(self, filename: str) -> None:
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
     current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
