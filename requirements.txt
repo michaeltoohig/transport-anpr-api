@@ -2,14 +2,18 @@
 keras==2.4.3
 h5py<3.0.0  # keras bug: https://github.com/keras-team/keras/issues/14265
 opencv-python==4.4.0.44
+numpy<1.19.0
 tensorflow==2.3.1
 sklearn
 
 # Web
+python-dotenv
 fastapi
 uvicorn
 python-multipart
 celery[redis]
+aiofiles
+jinja2
 
 # Typing
 mypy==0.770

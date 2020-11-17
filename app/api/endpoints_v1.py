@@ -21,7 +21,7 @@ async def post_detect_image(
     task = run_yolo.apply_async(kwargs={"filename": filename}, task_id=taskId)
 
     return dict(taskId=task.id, statusUrl=request.url_for('detect-vehicles-results', taskId=task.id))
-        
+
 
 @router.get("/detect/vehicles/{taskId}", name="detect-vehicles-results")
 async def get_detect(
@@ -53,7 +53,7 @@ async def post_detect_plate_image(
     taskId, filename = image
     task = run_wpod.apply_async(kwargs={"filename": filename}, task_id=taskId)
     return dict(taskId=task.id, statusUrl=request.url_for('detect-plate-results', taskId=task.id))
-        
+
 
 @router.get("/detect/plate/{taskId}", name="detect-plate-results")
 async def get_detect(
