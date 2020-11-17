@@ -6,10 +6,10 @@ import numpy as np
 from celery import current_task, Task
 from celery.signals import worker_process_init
 
-from app.config import IMAGE_DIRECTORY
+from app.core.config import IMAGE_DIRECTORY
 from app.core.celery_app import celery_app
 from app.yolo_utils2 import load_yolo_net, detect_objects, draw_detections, crop_detections
-from app.wpod_utils import load_wpod_net, get_plate, draw_box, preprocess_image
+from app.wpod_utils import load_wpod_net, get_plate, draw_box
 from app.ocr_utils import load_ocr_net, get_prediction
 
 # client_sentry = Client(settings.SENTRY_DSN)

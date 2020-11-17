@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request
 
 from starlette.responses import HTMLResponse
 
-from app.config import SERVER_HOST
+from app.core.config import SERVER_HOST
 from app.views.templates import templates
 
 router = APIRouter()

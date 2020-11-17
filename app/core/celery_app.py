@@ -1,4 +1,4 @@
-from app.config import CELERY_BROKER_URI, CELERY_BACKEND_URI
+from app.core.config import CELERY_BROKER_URI, CELERY_BACKEND_URI
 from celery import Celery
 
 celery_app = Celery(

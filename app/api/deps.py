@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import UploadFile, File, Depends, HTTPException
 
-from app.config import IMAGE_DIRECTORY
+from app.core.config import IMAGE_DIRECTORY
 
 
 async def upload_image(image: UploadFile = File(None)):
