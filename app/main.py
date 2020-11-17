@@ -5,7 +5,7 @@ from starlette.staticfiles import StaticFiles
 
 from app.api.endpoints_v1 import router as api_router
 from app.views.endpoints import router as web_router
-from app.config import REDIS_HOST, REDIS_PORT, IMAGE_DIRECTORY
+from app.core.config import REDIS_HOST, REDIS_PORT, IMAGE_DIRECTORY
 
 
 app = FastAPI()

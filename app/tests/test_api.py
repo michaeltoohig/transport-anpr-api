@@ -2,7 +2,7 @@
 from fastapi.testclient import TestClient
 # from sqlalchemy.orm import Session
 
-# from app.config import settings
+# from app.core.config import settings
 # from app.tests.utils.image import create_random_business_image, create_random_image, create_random_activity_image
 # from app.tests.utils.business import create_random_business
 

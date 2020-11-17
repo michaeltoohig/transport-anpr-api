@@ -4,7 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, Request, Depends
 
-from app.config import IMAGE_DIRECTORY
+from app.core.config import IMAGE_DIRECTORY
 from app.worker import run_yolo, run_wpod
 from app.api import deps
 
