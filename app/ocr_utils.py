@@ -5,7 +5,7 @@ from sklearn.preprocessing import LabelEncoder
 
 
 # Create sort_contours() function to grab the contour of each digit from left to right
-def sort_contours(cnts,reverse = False):
+def sort_contours(cnts, reverse=False):
     i = 0
     boundingBoxes = [cv2.boundingRect(c) for c in cnts]
     (cnts, boundingBoxes) = zip(*sorted(zip(cnts, boundingBoxes), key=lambda b: b[1][i], reverse=reverse))
@@ -21,13 +21,24 @@ def predict_from_model(image, model, labels):
     return prediction
 
 
-def get_prediction(plate_img):
+def preprocess_image(image_path, resize=False):
+    img = cv2.imread(image_path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = cv2.bitwise_not(img)
+    img = img / 255
+    if resize:
+        img = cv2.resize(img, (224,224))
+    return img
+
+
+def get_prediction(model, labels, plate_img):
+    plate_img = preprocess_image(plate_img)
     # Scales, calculates absolute values, and converts the result to 8-bit.
-    plate_image = cv2.convertScaleAbs(plate_imgd, alpha=(255.0))
+    plate_image = cv2.convertScaleAbs(plate_img, alpha=(255.0))
 
     # Convert to grayscale and blur the image
     gray = cv2.cvtColor(plate_image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray,(7,7),0)
+    blur = cv2.GaussianBlur(gray, (7,7), 0)
 
     # Applied inversed thresh_binary 
     binary = cv2.threshold(blur, 180, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
@@ -48,14 +59,14 @@ def get_prediction(plate_img):
 
     for c in sort_contours(cont):
         (x, y, w, h) = cv2.boundingRect(c)
-        ratio = h/w
-        if 1<=ratio<=3.5: # Only select contour with defined ratio
-            if h/plate_image.shape[0]>=0.5: # Select contour which has the height larger than 50% of the plate
+        ratio = h / w
+        if 1 <= ratio <= 3.5: # Only select contour with defined ratio
+            if h / plate_image.shape[0] >= 0.5: # Select contour which has the height larger than 50% of the plate
                 # Draw bounding box arroung digit number
                 cv2.rectangle(test_roi, (x, y), (x + w, y + h), (0, 255,0), 2)
 
                 # Sperate numb-er and gibe prediction
-                curr_num = thre_mor[y:y+h,x:x+w]
+                curr_num = thre_mor[y:y + h, x:x + w]
                 curr_num = cv2.resize(curr_num, dsize=(digit_w, digit_h))
                 _, curr_num = cv2.threshold(curr_num, 220, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
                 crop_characters.append(curr_num)
@@ -64,8 +75,8 @@ def get_prediction(plate_img):
 
     final_string = ""
     for i, character in enumerate(crop_characters):
-        print(character)
         title = np.array2string(predict_from_model(character, model, labels))
+        print(title)
         final_string += title.strip("'[]")
     return final_string
 

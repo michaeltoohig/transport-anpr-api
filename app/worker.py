@@ -101,5 +101,6 @@ def run_ocr(self, filename: str) -> None:
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
     current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
 
-    img = cv.imread(str(filepath))
-    prediction = get_prediction(img)
+    # img = cv.imread(str(filepath))
+    prediction = get_prediction(ocr_net, ocr_labels, str(filepath))
+    return prediction

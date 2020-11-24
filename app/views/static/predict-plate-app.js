@@ -1,5 +1,5 @@
 var elem = new Vue({
-  el: "#detect-plate-app",
+  el: "#predict-plate-app",
   delimiters: ["[[", "]]"],
   data: {
     selectedFile: null,
@@ -24,7 +24,7 @@ var elem = new Vue({
         method: "POST",
         body: fd,
       };
-      fetch(`${API_STR}/detect/plate`, requestOptions)
+      fetch(`${API_STR}/predict/plate`, requestOptions)
         .then(async response => {
           const data = await response.json()
 
@@ -43,11 +43,12 @@ var elem = new Vue({
           console.error('There was an error!', error)
         });
     },
-    async onVehicleImage (sentData) {
+    async onPlateImage (sentData) {
+      console.log('Send', sentData)
       const requestOptions = {
         method: "POST",
       };
-      fetch(`${API_STR}/detect/plate?taskId=${sentData.taskId}&file=${sentData.file}`, requestOptions)
+      fetch(`${API_STR}/predict/plate?taskId=${sentData.taskId}`, requestOptions)
         .then(async response => {
           const data = await response.json()
 
@@ -70,7 +71,7 @@ var elem = new Vue({
       const requestOptions = {
         method: "GET",
       }
-      fetch(`${API_STR}/detect/plate/${this.taskId}`, requestOptions)
+      fetch(`${API_STR}/predict/plate/${this.taskId}`, requestOptions)
         .then(async response => {
           const data = await response.json()
 
@@ -96,15 +97,12 @@ var elem = new Vue({
           setTimeout(() => { this.poll() }, 1000)
         }
       }
-    },
-    predictPlate () {
-      bus.$emit('send-plate-image', {taskId: this.taskId})
-    },
+    }
   },
   mounted () {
-    bus.$on('send-vehicle-image', data => {
+    bus.$on('send-plate-image', data => {
       this.resetData()
-      this.onVehicleImage(data)
+      this.onPlateImage(data)
     })
   }
 });

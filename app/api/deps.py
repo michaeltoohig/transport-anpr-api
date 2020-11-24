@@ -41,9 +41,37 @@ async def detected_vehicle(taskId: str = None, file: str = None):
     return str(directory), filename
 
 
+async def detected_plate(taskId: str = None):
+    if not taskId:
+        return None
+    plateImg = Path(IMAGE_DIRECTORY) / taskId / "plate.jpg"
+    directory = uuid.uuid4()
+    filename = "original.jpg"  # TODO file extension handling
+    destination = Path(IMAGE_DIRECTORY) / str(directory) / filename
+    destination.parent.mkdir()
+    try:
+        with destination.open("wb") as buffer:
+            shutil.copyfileobj(plateImg.open("rb"), buffer)
+    finally:
+        pass
+    return str(directory), filename
+
+
 async def vehicle_image(
     new_image: Union[tuple, None] = Depends(upload_image), 
     old_image: Union[tuple, None] = Depends(detected_vehicle),
+) -> tuple:
+    if new_image is None and old_image is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No image given"
+        )
+    return new_image or old_image
+
+
+async def plate_image(
+    new_image: Union[tuple, None] = Depends(upload_image),
+    old_image: Union[tuple, None] = Depends(detected_plate),
 ) -> tuple:
     if new_image is None and old_image is None:
         raise HTTPException(
