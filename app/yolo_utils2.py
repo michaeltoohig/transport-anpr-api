@@ -68,7 +68,8 @@ def detect_objects(net, labels, layer_names, colors, img, show_time: bool=False,
             # Get the bounding box coordinates
             x, y = boxes[i][0], boxes[i][1]
             w, h = boxes[i][2], boxes[i][3]
-            classId = classids[i]
+            label = labels[classids[i]]
+            color = [int(c) for c in colors[classids[i]]]
             confidence = confidences[i]
 
             # XXX move this out, just get detections don't draw or do unnecessary work here
@@ -85,34 +86,30 @@ def detect_objects(net, labels, layer_names, colors, img, show_time: bool=False,
                 y=y,
                 w=w,
                 h=h,
-                classId=classId,
+                label=label,
+                color=color,
                 confidence=confidence,
             ))
     return detections
 
-def draw_detections(img, detections, colors, labels):
+def draw_detections(img, detections):
     for obj in detections:
-        classId = obj.get("classId")
+        label = obj.get("label")
+        color = obj.get("color")
         confidence = obj.get("confidence")
         x = obj.get("x")
         y = obj.get("y")
         w = obj.get("w")
         h = obj.get("h")
-        
-        # Get the unique color for this class
-        color = [int(c) for c in colors[classId]]
-
         # Draw the bounding box rectangle and label on the main image
         cv.rectangle(img, (x, y), (x+w, y+h), color, 2)
-        text = "{}: {:4f}".format(labels[classId], confidence)
+        text = "{}: {:4f}".format(label, confidence)
         cv.putText(img, text, (x, y-5), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
     return img
 
 def crop_detections(img, detections):
     images = []
     for obj in detections:
-        classId = obj.get("classId")
-        confidence = obj.get("confidence")
         x = obj.get("x")
         y = obj.get("y")
         w = obj.get("w")

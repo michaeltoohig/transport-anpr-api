@@ -1,3 +1,4 @@
+from app.wpod_utils import detect_plate
 import os
 from pathlib import Path
 from typing import Any
@@ -28,10 +29,16 @@ async def get_detect_image(
     # token: str = Body(...),
 ) -> Any:
     job = run_yolo.AsyncResult(taskId)
-    if job.state == 'PROGRESS':
+    print(job.state)
+    if job.state == 'PENDING':
+        return dict(status=job.state, progress=0)
+    elif job.state == 'FAILURE':
+        return dict(status=job.state, progress=0)
+    elif job.state == 'PROGRESS':
         return dict(status=job.state, progress=job.result['progress'])
     elif job.state == 'SUCCESS':
         image = request.url_for("images", path=f"{taskId}/detections.jpg")
+        detectPlateUrl = request.url_for("detect-plate")
         objs = []
         for file in os.listdir(str(Path(IMAGE_DIRECTORY) / taskId / "objects")):
             obj = {}
@@ -39,10 +46,10 @@ async def get_detect_image(
             obj["src"] = url
             obj["file"] = file
             objs.append(obj)
-        return dict(status=job.state, progress=1, image=image, objs=objs)
+        return dict(status=job.state, progress=1, image=image, objs=objs, taskId=taskId, detectPlateUrl=detectPlateUrl)
 
 
-@router.post("/detect/plate")
+@router.post("/detect/plate", name="detect-plate")
 async def post_detect_plate_image(
     request: Request,
     image: tuple = Depends(deps.vehicle_image),

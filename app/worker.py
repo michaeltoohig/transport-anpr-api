@@ -8,7 +8,7 @@ from celery.signals import worker_process_init
 
 from app.core.config import IMAGE_DIRECTORY
 from app.core.celery_app import celery_app
-from app.yolo_utils2 import load_yolo_net, detect_objects, draw_detections, crop_detections
+from app.yolo_utils2 import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detections
 from app.wpod_utils import load_wpod_net, get_plate, draw_box
 from app.ocr_utils import load_ocr_net, get_prediction
 
@@ -52,7 +52,9 @@ def run_yolo(self, filename: str) -> None:
     detections = detect_objects(yolo_net, yolo_labels, yolo_layers, yolo_colors, img)
     current_task.update_state(state="PROGRESS", meta={"progress": 0.7})
 
-    detections_img = draw_detections(img.copy(), detections, yolo_colors, yolo_labels)
+    detections = list(filter(lambda d: d["label"] in VEHICLE_CLASSES, detections))
+
+    detections_img = draw_detections(img.copy(), detections)
     save_path = filepath.parent / "detections.jpg"
     cv.imwrite(str(save_path), detections_img)
 
