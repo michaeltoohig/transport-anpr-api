@@ -40,21 +40,21 @@ class BaseTask(Task):
     base=BaseTask,
     bind=True, 
     acks_late=True,
-    soft_time_limit=5,
-    time_limit=10,
+    soft_time_limit=10,
+    time_limit=15,
 )
 def run_yolo(self, filename: str) -> None:
-
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
     current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
 
-    img = cv.imread(str(filepath))  # TODO move this into a helper function in yolo utils to hanle using cv
+    img = cv.imread(str(filepath))  # TODO move this into a helper function in yolo utils to handle using cv
     detections = detect_objects(yolo_net, yolo_labels, yolo_layers, yolo_colors, img)
     current_task.update_state(state="PROGRESS", meta={"progress": 0.7})
 
     detections = list(filter(lambda d: d["label"] in VEHICLE_CLASSES, detections))
 
     detections_img = draw_detections(img.copy(), detections)
+    # height, width = 
     save_path = filepath.parent / "detections.jpg"
     cv.imwrite(str(save_path), detections_img)
 
@@ -65,16 +65,18 @@ def run_yolo(self, filename: str) -> None:
     for num, image in enumerate(detection_images):
         cv.imwrite(str(save_directory / f"{num+1}.jpg"), image)  # TODO fix cv2 error from some non-jpg
 
+    return detections
+
 
 @celery_app.task(
     base=BaseTask,
     bind=True,
     acks_late=True,
-    soft_time_limmit=5,
-    time_limit=10,
+    soft_time_limmit=10,
+    time_limit=15,
     throws=(AssertionError),
 )
-def run_wpod(self, filename: str) -> None:
+def run_wpod(self, filename: str, makePrediction: bool = False) -> None:
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
     current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
 
@@ -88,8 +90,13 @@ def run_wpod(self, filename: str) -> None:
     img_float32 = np.float32(vehicleImg)
     vehicleImg = cv.cvtColor(img_float32, cv.COLOR_RGB2BGR)
 
-    cv.imwrite(str(filepath.parent / "plate.jpg"), plateImg * 255)
+    plateFile = str(filepath.parent / "plate.jpg")
+    cv.imwrite(plateFile, plateImg * 255)
     cv.imwrite(str(filepath.parent / "vehicle.jpg"), vehicleImg * 255)
+
+    if makePrediction:
+        prediction = get_prediction(ocr_net, ocr_labels, plateFile)
+        return prediction
 
 
 @celery_app.task(
@@ -103,6 +110,5 @@ def run_ocr(self, filename: str) -> None:
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
     current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
 
-    # img = cv.imread(str(filepath))
     prediction = get_prediction(ocr_net, ocr_labels, str(filepath))
     return prediction
