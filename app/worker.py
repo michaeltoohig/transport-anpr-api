@@ -36,6 +36,15 @@ class BaseTask(Task):
         super(BaseTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
 
+def image_resize(img):
+    maxWidth = 300
+    height, width = img.shape[:2]
+    if width > maxWidth:
+        height = int(height * maxWidth / width)
+        width = maxWidth
+    return cv.resize(img, (width, height), interpolation=cv.INTER_AREA)
+
+
 @celery_app.task(
     base=BaseTask,
     bind=True, 
@@ -54,16 +63,22 @@ def run_yolo(self, filename: str) -> None:
     detections = list(filter(lambda d: d["label"] in VEHICLE_CLASSES, detections))
 
     detections_img = draw_detections(img.copy(), detections)
-    # height, width = 
     save_path = filepath.parent / "detections.jpg"
     cv.imwrite(str(save_path), detections_img)
+    detections_img_sm = image_resize(detections_img)
+    save_path = filepath.parent / "thumbs" / "detections.jpg"
+    save_path.parent.mkdir()
+    cv.imwrite(str(save_path), detections_img_sm)
 
     detection_images = crop_detections(img, detections)
     save_directory = filepath.parent / "objects" 
     if not save_directory.exists():
         save_directory.mkdir()
+        (save_directory / "thumbs").mkdir()
     for num, image in enumerate(detection_images):
         cv.imwrite(str(save_directory / f"{num+1}.jpg"), image)  # TODO fix cv2 error from some non-jpg
+        image_sm = image_resize(image)
+        cv.imwrite(str(save_directory / "thumbs" / f"{num+1}.jpg"), image_sm)
 
     return detections
 
@@ -90,12 +105,18 @@ def run_wpod(self, filename: str, makePrediction: bool = False) -> None:
     img_float32 = np.float32(vehicleImg)
     vehicleImg = cv.cvtColor(img_float32, cv.COLOR_RGB2BGR)
 
-    plateFile = str(filepath.parent / "plate.jpg")
-    cv.imwrite(plateFile, plateImg * 255)
+    plateFile = filepath.parent / "plate.jpg"
+    cv.imwrite(str(plateFile), plateImg * 255)
     cv.imwrite(str(filepath.parent / "vehicle.jpg"), vehicleImg * 255)
 
+    # plateImgSm = image_resize(plateImg)
+    # cv.imwrite(str(plateFile.parent / "thumbs" / "plate.jpg"), plateImgSm * 255)
+    vehicleImgSm = image_resize(vehicleImg)
+    (filepath.parent / "thumbs").mkdir()
+    cv.imwrite(str(filepath.parent / "thumbs" / "vehicle.jpg"), vehicleImgSm * 255)
+    
     if makePrediction:
-        prediction = get_prediction(ocr_net, ocr_labels, plateFile)
+        prediction = get_prediction(ocr_net, ocr_labels, str(plateFile))
         return prediction
 
 

@@ -37,16 +37,15 @@ async def get_detect_image(
     elif job.state == 'PROGRESS':
         return dict(status=job.state, progress=job.result['progress'])
     elif job.state == 'SUCCESS':
-        image = request.url_for("images", path=f"{taskId}/detections.jpg")
-        detectPlateUrl = request.url_for("detect-plate")
-        objs = []
-        for file in os.listdir(str(Path(IMAGE_DIRECTORY) / taskId / "objects")):
+        detections_thumb = request.url_for("images", path=f"{taskId}/thumbs/detections.jpg")
+        detected_objs = []
+        for file in os.listdir(str(Path(IMAGE_DIRECTORY) / taskId / "objects" / "thumbs")):
             obj = {}
-            url = request.url_for("images", path=f"{taskId}/objects/{file}")
+            url = request.url_for("images", path=f"{taskId}/objects/thumbs/{file}")
             obj["src"] = url
             obj["file"] = file
-            objs.append(obj)
-        return dict(status=job.state, progress=1, image=image, objs=objs, taskId=taskId, detectPlateUrl=detectPlateUrl)
+            detected_objs.append(obj)
+        return dict(status=job.state, progress=1, image=detections_thumb, objs=detected_objs, taskId=taskId, detectPlateUrl=request.url_for("detect-plate"))
 
 
 @router.post("/detect/plate", name="detect-plate")
@@ -75,7 +74,7 @@ async def get_detect_plate(
     elif job.state == 'PROGRESS':
         return dict(status=job.state, progress=job.result['progress'])
     elif job.state == 'SUCCESS':
-        vehicle_image = request.url_for("images", path=f"{taskId}/vehicle.jpg")
+        vehicle_image = request.url_for("images", path=f"{taskId}/thumbs/vehicle.jpg")
         plate_image = request.url_for("images", path=f"{taskId}/plate.jpg")
         prediction = job.result if job.result else ""
         return dict(status=job.state, progress=1, vehicle=vehicle_image, plate=plate_image, prediction=prediction)
