@@ -133,3 +133,14 @@ def run_ocr(self, filename: str) -> None:
 
     prediction = get_prediction(ocr_net, ocr_labels, str(filepath))
     return prediction
+
+
+# @celery_app.task(
+#     base=BaseTask,
+#     bind=True,
+#     acks_late=True,
+#     soft_time_limit=5,
+#     time_limit=10,
+# )
+# def detect_colours(self, filename: str) -> None:
+#     return None
