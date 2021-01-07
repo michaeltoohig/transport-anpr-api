@@ -1,4 +1,5 @@
 # from raven import Client
+import json
 from pathlib import Path
 
 import cv2 as cv
@@ -8,7 +9,7 @@ from celery.signals import worker_process_init
 
 from app.core.config import IMAGE_DIRECTORY
 from app.core.celery_app import celery_app
-from app.yolo_utils2 import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detections
+from app.yolo_utils2 import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detection
 from app.wpod_utils import load_wpod_net, get_plate, draw_box
 from app.ocr_utils import load_ocr_net, get_prediction
 
@@ -70,12 +71,15 @@ def run_yolo(self, filename: str) -> None:
     save_path.parent.mkdir()
     cv.imwrite(str(save_path), detections_img_sm)
 
-    detection_images = crop_detections(img, detections)
     save_directory = filepath.parent / "objects" 
     if not save_directory.exists():
         save_directory.mkdir()
         (save_directory / "thumbs").mkdir()
-    for num, image in enumerate(detection_images):
+    for num, obj in enumerate(detections):
+        # Save JSON file with bounding box to original photo
+        (save_directory / f"{num+1}.json").write_text(json.dumps(obj))
+        # Save cropped image of detected object and thumbnail
+        image = crop_detection(img, obj)
         cv.imwrite(str(save_directory / f"{num+1}.jpg"), image)  # TODO fix cv2 error from some non-jpg
         image_sm = image_resize(image)
         cv.imwrite(str(save_directory / "thumbs" / f"{num+1}.jpg"), image_sm)

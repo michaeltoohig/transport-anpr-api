@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Request, Depends, Query
 
 from app.core.config import IMAGE_DIRECTORY
-from app.worker import run_ocr, run_yolo, run_wpod, detect_colours
+from app.worker import run_ocr, run_yolo, run_wpod
 from app.api import deps
 
 router = APIRouter()

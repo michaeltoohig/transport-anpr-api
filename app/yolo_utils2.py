@@ -107,17 +107,14 @@ def draw_detections(img, detections):
         cv.putText(img, text, (x, y-5), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
     return img
 
-def crop_detections(img, detections):
-    images = []
-    for obj in detections:
-        x = obj.get("x")
-        y = obj.get("y")
-        w = obj.get("w")
-        h = obj.get("h")
-        # Crop the main image for each detection and save
-        crop = img[y:y+h, x:x+w]
-        images.append(crop)
-    return images
+def crop_detection(img, detection):
+    x = detection.get("x")
+    y = detection.get("y")
+    w = detection.get("w")
+    h = detection.get("h")
+    # Crop the main image for each detection and save
+    crop = img[y:y+h, x:x+w]
+    return crop
 
 # define classes we want to record
 VEHICLE_CLASSES = ['car', 'truck', 'bus', 'motorbike']
