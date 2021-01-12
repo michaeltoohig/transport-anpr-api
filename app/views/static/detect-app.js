@@ -6,6 +6,7 @@ var elem = new Vue({
     taskId: null,
     progress: 0,
     result: null,
+    makePrediction: false,
   },
   methods: {
     onFileSelected (event) {
@@ -72,7 +73,7 @@ var elem = new Vue({
       }
     },
     detectPlate (file) {
-      bus.$emit('send-vehicle-image', {taskId: this.taskId, file: file})
+      bus.$emit('send-vehicle-image', {taskId: this.taskId, file: file, makePrediction: this.makePrediction})
     },
   }
 });

@@ -1,4 +1,5 @@
 # from raven import Client
+import json
 from pathlib import Path
 
 import cv2 as cv
@@ -8,7 +9,7 @@ from celery.signals import worker_process_init
 
 from app.core.config import IMAGE_DIRECTORY
 from app.core.celery_app import celery_app
-from app.yolo_utils2 import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detections
+from app.yolo_utils2 import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detection
 from app.wpod_utils import load_wpod_net, get_plate, draw_box
 from app.ocr_utils import load_ocr_net, get_prediction
 
@@ -36,19 +37,27 @@ class BaseTask(Task):
         super(BaseTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
 
+def image_resize(img):
+    maxWidth = 300
+    height, width = img.shape[:2]
+    if width > maxWidth:
+        height = int(height * maxWidth / width)
+        width = maxWidth
+    return cv.resize(img, (width, height), interpolation=cv.INTER_AREA)
+
+
 @celery_app.task(
     base=BaseTask,
     bind=True, 
     acks_late=True,
-    soft_time_limit=5,
-    time_limit=10,
+    soft_time_limit=10,
+    time_limit=15,
 )
 def run_yolo(self, filename: str) -> None:
-
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
     current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
 
-    img = cv.imread(str(filepath))  # TODO move this into a helper function in yolo utils to hanle using cv
+    img = cv.imread(str(filepath))  # TODO move this into a helper function in yolo utils to handle using cv
     detections = detect_objects(yolo_net, yolo_labels, yolo_layers, yolo_colors, img)
     current_task.update_state(state="PROGRESS", meta={"progress": 0.7})
 
@@ -57,24 +66,36 @@ def run_yolo(self, filename: str) -> None:
     detections_img = draw_detections(img.copy(), detections)
     save_path = filepath.parent / "detections.jpg"
     cv.imwrite(str(save_path), detections_img)
+    detections_img_sm = image_resize(detections_img)
+    save_path = filepath.parent / "thumbs" / "detections.jpg"
+    save_path.parent.mkdir()
+    cv.imwrite(str(save_path), detections_img_sm)
 
-    detection_images = crop_detections(img, detections)
     save_directory = filepath.parent / "objects" 
     if not save_directory.exists():
         save_directory.mkdir()
-    for num, image in enumerate(detection_images):
+        (save_directory / "thumbs").mkdir()
+    for num, obj in enumerate(detections):
+        # Save JSON file with bounding box to original photo
+        (save_directory / f"{num+1}.json").write_text(json.dumps(obj))
+        # Save cropped image of detected object and thumbnail
+        image = crop_detection(img, obj)
         cv.imwrite(str(save_directory / f"{num+1}.jpg"), image)  # TODO fix cv2 error from some non-jpg
+        image_sm = image_resize(image)
+        cv.imwrite(str(save_directory / "thumbs" / f"{num+1}.jpg"), image_sm)
+
+    return detections
 
 
 @celery_app.task(
     base=BaseTask,
     bind=True,
     acks_late=True,
-    soft_time_limmit=5,
-    time_limit=10,
+    soft_time_limmit=10,
+    time_limit=15,
     throws=(AssertionError),
 )
-def run_wpod(self, filename: str) -> None:
+def run_wpod(self, filename: str, makePrediction: bool = False) -> None:
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
     current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
 
@@ -88,8 +109,19 @@ def run_wpod(self, filename: str) -> None:
     img_float32 = np.float32(vehicleImg)
     vehicleImg = cv.cvtColor(img_float32, cv.COLOR_RGB2BGR)
 
-    cv.imwrite(str(filepath.parent / "plate.jpg"), plateImg * 255)
+    plateFile = filepath.parent / "plate.jpg"
+    cv.imwrite(str(plateFile), plateImg * 255)
     cv.imwrite(str(filepath.parent / "vehicle.jpg"), vehicleImg * 255)
+
+    # plateImgSm = image_resize(plateImg)
+    # cv.imwrite(str(plateFile.parent / "thumbs" / "plate.jpg"), plateImgSm * 255)
+    vehicleImgSm = image_resize(vehicleImg)
+    (filepath.parent / "thumbs").mkdir()
+    cv.imwrite(str(filepath.parent / "thumbs" / "vehicle.jpg"), vehicleImgSm * 255)
+    
+    if makePrediction:
+        prediction = get_prediction(ocr_net, ocr_labels, str(plateFile))
+        return prediction
 
 
 @celery_app.task(
@@ -103,6 +135,16 @@ def run_ocr(self, filename: str) -> None:
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
     current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
 
-    # img = cv.imread(str(filepath))
     prediction = get_prediction(ocr_net, ocr_labels, str(filepath))
     return prediction
+
+
+# @celery_app.task(
+#     base=BaseTask,
+#     bind=True,
+#     acks_late=True,
+#     soft_time_limit=5,
+#     time_limit=10,
+# )
+# def detect_colours(self, filename: str) -> None:
+#     return None

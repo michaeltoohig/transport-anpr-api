@@ -44,10 +44,11 @@ var elem = new Vue({
         });
     },
     async onVehicleImage (sentData) {
+      console.log('GOT vehicle img', sentData)
       const requestOptions = {
         method: "POST",
       };
-      fetch(`${API_STR}/detect/plate?taskId=${sentData.taskId}&file=${sentData.file}`, requestOptions)
+      fetch(`${API_STR}/detect/plate?taskId=${sentData.taskId}&file=${sentData.file}&makePrediction=${Boolean(sentData.makePrediction)}`, requestOptions)
         .then(async response => {
           const data = await response.json()
 
