@@ -11,9 +11,9 @@ def test_upload_image(client: TestClient) -> None:
     with open("app/tests/vuplate.jpg", "rb") as f:
         file = {"image": ("vuplate.jpg", f, "image/jpeg")}
         response = client.post(
-            f"/detect/vehicles", files=file, data={"token": "test"}
+            f"/api/v1/detect/vehicles", files=file, data={"token": "test"}
         )
-        assert response
+        assert response.status_code == 201
         content = response.json()
 
 
@@ -21,18 +21,15 @@ def test_upload_image_read_status(client: TestClient) -> None:
     with open("app/tests/vuplate.jpg", "rb") as f:
         file = {"image": ("vuplate.jpg", f, "image/jpeg")}
         response = client.post(
-            f"/detect/vehicles", files=file, data={"token": "test"}
+            f"/api/v1/detect/vehicles", files=file, data={"token": "test"}
         )
-    assert response.status_code  # == 202
+    assert response.status_code == 201
     content = response.json() 
-    key = content["key"]
-    print(key)
+    taskId = content["taskId"]
     response = client.get(
-        f"/detect/vehicles/{key}"
+        f"/api/v1/detect/vehicles/{taskId}"
     )
     assert response.status_code == 200
-    content = response.json()
-    assert content["status"] == "gotem"
 
 
 # def test_plate_prediction(
@@ -59,3 +56,18 @@ def test_upload_image_read_status(client: TestClient) -> None:
 #             f"/plate", files=file, data={"token": "test"}
 #         )
 #     assert response.status_code == 404
+
+
+def test_colour_detection(client: TestClient) -> None:
+    with open("app/tests/vuplate.jpg", "rb") as f:
+        file = {"image": ("vuplate.jpg", f, "image/jpeg")}
+        response = client.post(
+            f"/api/v1/detect/colours", files=file, data={"token": "test"}
+        )
+        assert response.status_code == 201
+        content = response.json() 
+        taskId = content["taskId"]
+        response = client.get(
+            f"/api/v1/detect/vehicles/{taskId}"
+        )
+        assert response.status_code == 200

@@ -27,7 +27,7 @@
             <input v-model="makePrediction" id="makePredictionBox" type="checkbox">
             <div v-for="obj in result.objs" :key="obj.src">
               <img :src="obj.src" width="200">
-              <button @click="detectPlate(obj.file)">Detect Plate</button>
+              <button @click="sendVehicleImage(obj.file)">Use this image</button>
             </div>
           </div>
         </div>
@@ -47,6 +47,22 @@
           <img :src="result.vehicle" width="200">
           <img :src="result.plate" width="200">
           <button @click="predictPlate()">Predict Plate</button>
+        </div>
+      </div>
+    </div>
+
+    <hr/>
+
+    <div class="app" id="detect-colours-app">
+      <h4>Detect Colours</h4>
+      <input type="file" @change="onFileSelected" accept="image/*" class="input-file">
+      <button @click="onUpload">Upload</button>
+      <div v-if="taskId">
+        <span>Task: [[ taskId ]]</span>
+        <span>Result: [[ result ]]</span>
+        <div v-if="result.progress === 1">
+          <img :src="result.vehicle" width="200">
+          <img :src="result.plate" width="200">
         </div>
       </div>
     </div>
@@ -78,6 +94,7 @@
   </script>
   {{ url_for("static", path="detect-app.js") | js_script | safe }}
   {{ url_for("static", path="detect-plate-app.js") | js_script | safe }}
+  {{ url_for("static", path="detect-colours-app.js") | js_script | safe }}
   {{ url_for("static", path="predict-plate-app.js") | js_script | safe }}
 </body>
 </html>

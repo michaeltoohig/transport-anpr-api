@@ -1,6 +1,8 @@
 # from raven import Client
 import json
+import random
 from pathlib import Path
+from typing import Tuple
 
 import cv2 as cv
 import numpy as np
@@ -139,12 +141,33 @@ def run_ocr(self, filename: str) -> None:
     return prediction
 
 
-# @celery_app.task(
-#     base=BaseTask,
-#     bind=True,
-#     acks_late=True,
-#     soft_time_limit=5,
-#     time_limit=10,
-# )
-# def detect_colours(self, filename: str) -> None:
-#     return None
+class MockColorgramColour(object):
+    rgb: Tuple = None
+    proportion: float = None
+
+    def __init__(self):
+        self.rgb = self._generate_random_color()
+        self.proportion = random.random()
+
+    def __repr__(self):
+        return json.dumps(dict(rgb=self.rgb, proportion=self.proportion))
+
+    def _generate_random_color(self):
+        a = int(random.random() * 255)
+        b = int(random.random() * 255)
+        c = int(random.random() * 255)
+        return (a, b, c)
+
+
+@celery_app.task(
+    base=BaseTask,
+    bind=True,
+    acks_late=True,
+    soft_time_limit=5,
+    time_limit=10,
+)
+def detect_colours(self, filename: str) -> None:
+    colours = []
+    for i in range(3):
+        colours.append(MockColorgramColour())
+    print(colours)
