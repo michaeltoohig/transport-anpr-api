@@ -42,7 +42,7 @@ async def get_detect_image(
             obj["src"] = url
             obj["file"] = file
             detected_objs.append(obj)
-        return dict(status=job.state, progress=1, image=detections_thumb, objs=detected_objs, taskId=taskId, detectPlateUrl=request.url_for("detect-plate"))
+        return dict(status=job.state, progress=1, image=detections_thumb, objs=detected_objs, taskId=taskId, detectPlateUrl=request.url_for("detect-plate"), detectColoursUrl=request.url_for("detect-colours"))
     else:
         return dict(status="FAILURE", progress=1)
 
@@ -108,7 +108,7 @@ async def get_predict_plate(
         return dict(status="FAILURE", progress=1)
 
 
-@router.post("/detect/colours", status_code=201)
+@router.post("/detect/colours", name="detect-colours", status_code=201)
 async def post_detect_colours(
     request: Request,
     image: tuple = Depends(deps.vehicle_image),
