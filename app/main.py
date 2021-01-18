@@ -15,6 +15,7 @@ origins = [
     "http://localhost:5000",
     "https://anpr.vehiclerank.vu",
     "https://vehiclerank.vu",
+    "https://staging.vehiclerank.vu",
 ]
 
 app.add_middleware(
