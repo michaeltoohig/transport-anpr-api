@@ -7,6 +7,12 @@ var elem = new Vue({
     progress: 0,
     result: null,
   },
+  computed: {
+    colours () {
+      if (!this.result) null
+      else this.result.sort((a, b) => (a.proportion, b.proportion)).map(c => c.colour)
+    }
+  },
   methods: {
     resetData () {
       this.taskId = null

@@ -4,6 +4,7 @@ import random
 from pathlib import Path
 from typing import Tuple
 
+import colorgram
 import cv2 as cv
 import numpy as np
 from celery import current_task, Task
@@ -141,24 +142,6 @@ def run_ocr(self, filename: str) -> None:
     return prediction
 
 
-class MockColorgramColour(object):
-    rgb: Tuple = None
-    proportion: float = None
-
-    def __init__(self):
-        self.rgb = self._generate_random_color()
-        self.proportion = random.random()
-
-    def __repr__(self):
-        return json.dumps(dict(rgb=self.rgb, proportion=self.proportion))
-
-    def _generate_random_color(self):
-        a = int(random.random() * 255)
-        b = int(random.random() * 255)
-        c = int(random.random() * 255)
-        return (a, b, c)
-
-
 @celery_app.task(
     base=BaseTask,
     bind=True,
@@ -167,7 +150,8 @@ class MockColorgramColour(object):
     time_limit=10,
 )
 def detect_colours(self, filename: str) -> None:
-    colours = []
-    for i in range(3):
-        colours.append(MockColorgramColour())
-    print(colours)
+    filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
+    current_task.update_state(state="PROGRESS", meta={"progress": 0.5})
+    colours = colorgram.extract(filepath, 6)
+    convertRGB = lambda c: "#{0:02x}{1:02x}{2:02x}".format(c.rgb.r, c.rgb.g, c.rgb.b).upper()
+    return [dict(colour=convertRGB(c), proportion=c.proportion) for c in colours]

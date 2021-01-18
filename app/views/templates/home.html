@@ -61,8 +61,9 @@
         <span>Task: [[ taskId ]]</span>
         <span>Result: [[ result ]]</span>
         <div v-if="result.progress === 1">
-          <img :src="result.vehicle" width="200">
-          <img :src="result.plate" width="200">
+          <div v-for="colour in result.colours" :key="colour.colour" :style="{ 'background-color': colour.colour }">
+            <span>[[ colour.colour ]] [[ colour.proportion ]]</span>
+          </div>
         </div>
       </div>
     </div>
