@@ -49,6 +49,9 @@ def image_resize(img):
     return cv.resize(img, (width, height), interpolation=cv.INTER_AREA)
 
 
+# TODO split into multiple sub tasks - run a task chain on API side
+# one for collection detections from the image (which we can reuse in CLI)
+# another for saving files and thumbs in directories
 @celery_app.task(
     base=BaseTask,
     bind=True, 
@@ -102,7 +105,7 @@ def run_wpod(self, filename: str, makePrediction: bool = False) -> None:
     filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
     current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
 
-    img = cv.imread(str(filepath))
+    img = cv.imread(str(filepath))  # TODO again make this into a function of the utils so I don't have to do this and can just pass a str
     plateImg, cor = get_plate(wpod_net, img)  # XXX can raise AssertionError if no plate is found
     vehicleImg = draw_box(img, cor)
     

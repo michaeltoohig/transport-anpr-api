@@ -1,9 +1,11 @@
+# NOTE this file seems to be an incomplete thought, and I've forgotten what the goal of it was.
+
 import cv2 as cv
 from app.yolo_utils2 import load_yolo_net, detect_objects
 from app.wpod_utils import load_wpod_net, get_plate 
 from app.other_utils import draw_box
 
-IMAGE_PATH = "./truck1.jpg"
+IMAGE_PATH = "./images/3.jpg"
 net, labels, colors, layer_names = load_yolo_net()
 wpod_net = load_wpod_net()
 

@@ -1,6 +1,6 @@
 # Transport ANPR API
 
-I plan this repo to house the code related to deep learning and return simple responses to given images. Therefore the deep learning models and code will not clutter my main API which is responsible for users, vehicles, votes, comments, images, etc. 
+I plan this repo to house the code related to `AI` and return simple responses to given images. Therefore the models and code will not clutter my main API which is responsible for users, vehicles, votes, comments, images, etc. 
 
 I want this project to be well organized and it might also keep the materials for training the models and not just using the models so I can expand upon them when I get more local data to fine-tune the models.
 

@@ -1,11 +1,15 @@
+"""
+Original script I modified for my use. Supports single image, video, or webcam views. Not really anything I would use now.
+"""
+
 import numpy as np
 import argparse
 import cv2 as cv
 import subprocess
 import time
 import os
-from app.main import get_prediction
-from app.yolo_utils import get_yolo_net, infer_image, show_image
+
+from app.yolo_utils2 import detect_objects, draw_detections, load_yolo_net
 
 FLAGS = []
 
@@ -75,7 +79,8 @@ if __name__ == '__main__':
 
     FLAGS, unparsed = parser.parse_known_args()
 
-    net, labels, colors, layer_names = get_yolo_net(FLAGS.labels, FLAGS.config, FLAGS.weights)
+    yolo_net, yolo_labels, yolo_colors, yolo_layers = load_yolo_net()
+    # net, labels, colors, layer_names = get_yolo_net(FLAGS.labels, FLAGS.config, FLAGS.weights)
         
     # If both image and video files are given then raise error
     if FLAGS.image_path is None and FLAGS.video_path is None:
@@ -118,7 +123,10 @@ if __name__ == '__main__':
                     height, width = frame.shape[:2]
 
                 if count == 0:
-                    frame, boxes, confidences, classids, idxs = infer_image(net, layer_names, height, width, frame, colors, labels, FLAGS.show_time, FLAGS.confidence, FLAGS.threshold)
+                    print('detect')
+                    # frame, boxes, confidences, classids, idxs = infer_image(net, layer_names, height, width, frame, colors, labels, FLAGS.show_time, FLAGS.confidence, FLAGS.threshold)
+                    detections = detect_objects(yolo_net, yolo_labels, yolo_layers, yolo_colors, frame, FLAGS.show_time, FLAGS.confidence, FLAGS.threshold)
+                    draw_detections(frame, detections)
                     count += 1
                     
                     # Below is now in the `draw_labels_and_boxes` function
@@ -133,7 +141,9 @@ if __name__ == '__main__':
                     #         except AssertionError:
                     #             pass
                 else:
-                    frame, boxes, confidences, classids, idxs = infer_image(net, layer_names, height, width, frame, colors, labels, FLAGS.show_time, FLAGS.confidence, FLAGS.threshold, boxes, confidences, classids, idxs, infer=False)
+                    # frame, boxes, confidences, classids, idxs = infer_image(net, layer_names, height, width, frame, colors, labels, FLAGS.show_time, FLAGS.confidence, FLAGS.threshold, boxes, confidences, classids, idxs, infer=False)
+                    # detections = detect_objects(yolo_net, yolo_labels, yolo_layers, yolo_colors, frame, FLAGS.show_time, FLAGS.confidence, FLAGS.threshold)
+                    draw_detections(frame, detections)
                     count = (count + 1) % 6
 
                     
