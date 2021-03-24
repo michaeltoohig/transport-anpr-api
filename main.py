@@ -91,32 +91,81 @@ def images(
         detections = list(filter(lambda d: d["label"] in VEHICLE_CLASSES, detections))
 
         for num, obj in enumerate(detections):
-            # TODO crop with buffer area around detection in 4/3 aspect ratio
             print(obj)
-            dx = max(obj["x"], 0)
-            dy = max(obj["y"], 0)
+            dx = obj["x"]
+            dy = obj["y"]
             dh = obj["h"]
             dw = obj["w"]
 
-            aspect = w / h
-            if aspect > ASPECT_RATIO:
-                padding = round(dh * 0.2)
-            else:
-                padding = round(dw * 0.2)
+            fh = dh
+            fw = dh * ASPECT_RATIO 
 
-            dx = dx - padding
-            dy = dy - padding
-            dh = dh + (padding * 2)
-            dw = dw + (padding * 2)
-            
+            paddingRatio = 0.3
+            fh += fh * paddingRatio
+            fw += fw * paddingRatio
+            print(fh, fw, fw/fh)
+
+            print('x,y')
+            print(dx, dy)
+            fy = dy + ((dh - fh) / 2)
+            fx = int(dx + ((dw - fw) / 2))
+            print(fx, fy)
+            import pdb; pdb.set_trace()
+
+            # Shift bounding area if it exceeds image frame
+            if fx < 0:
+                print(f"{fx} less than zero")
+                # shift right
+                if abs(fx) + fw > w:
+                    # width is greater than total width - adjust height and width
+                    continue
+                    pass
+                else:
+                    fw += abs(fx)
+                    fx = 0
+
+            if fy < 0:
+                # shift down
+                if abs(fy) + fh > h:
+                    # height is greater than total height - adjust height and width
+                    continue
+                    pass
+                else:
+                    fh += abs(fy)
+                    fy = 0           
+
+            # if (dh < )
+
+            # # TODO crop with buffer area around detection in 4/3 aspect ratio
+            # print(obj)
+            # dx = max(obj["x"], 0)
+            # dy = max(obj["y"], 0)
+            # dh = obj["h"]
+            # dw = obj["w"]
+
+            # aspect = w / h
             # if aspect > ASPECT_RATIO:
-            #     # reduce width or increase height
-            #     h = h + padding
+            #     padding = round(dh * 0.2)
             # else:
-            #     # reduce height or increase width
-            #     w = w + padding
+            #     padding = round(dw * 0.2)
 
-            vehicle_img = img[dy:dy+dh, dx:dx+dw].copy()
+            # dx = dx - padding
+            # dy = dy - padding
+            # dh = dh + (padding * 2)
+            # dw = dw + (padding * 2)
+            
+            # # if aspect > ASPECT_RATIO:
+            # #     # reduce width or increase height
+            # #     h = h + padding
+            # # else:
+            # #     # reduce height or increase width
+            # #     w = w + padding
+
+            print(dy, dh, dx, dw)
+            print(fy, fh, fx, fw)
+            if fh < 300 or fh < 300:
+                continue
+            vehicle_img = img[int(fy):int(fy+fh), int(fx):int(fx+fw)].copy()
             cv.imshow("VehicleImage", vehicle_img)
             cv.waitKey(0)
 
