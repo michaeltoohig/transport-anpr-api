@@ -123,3 +123,66 @@ def images(
 
 if __name__ == "__main__":
     cli()
+
+
+"""
+requirements: must pad the roi, adjust bounding box to our desired aspect ratio, shift bounding box to within image limits at expense of padding
+
+https://stackoverflow.com/questions/14295885/algorithm-for-cropping-an-image-without-removing-a-specified-part-of-it
+Try to see if this points us in the right direction
+
+-     (CGRect)cropSize:(CGSize)sourceSize 
+             toFitSize:(CGSize)fitSize
+   withoutCroppingRect:(CGRect)featuresRect
+{
+    CGRect result = CGRectZero;
+    BOOL fitSizeIsTaller;
+    CGFloat sourceRatio = sourceSize.width / sourceSize.height;
+    CGFloat fitRatio    = fitSize.width    / fitSize.height;
+     if (sourceRatio > fitRatio)
+            fitSizeIsTaller = YES;
+     else   fitSizeIsTaller = NO;
+
+        //size sourceRect to fitSize
+    if (fitSizeIsTaller){
+        result.size.width  = fitSize.width;
+        result.size.height = result.size.width / sourceRatio;
+    } else {
+        result.size.height = fitSize.height;
+        result.size.width  = result.size.height * sourceRatio;
+    }
+        //make sure it is at least as large as fitSize
+    if (result.size.height < featuresRect.size.height) {
+        result.size.height = featuresRect.size.height;
+        result.size.width  = result.size.height * sourceRatio;
+    }
+
+    if (result.size.width  < featuresRect.size.width) {
+        result.size.width  = featuresRect.size.width;
+        result.size.height = result.size.width / sourceRatio;
+    }
+
+            //locate resultRect in center
+    result.origin.x = (sourceSize.width  - result.size.width )/2;
+    result.origin.y = (sourceSize.height - result.size.height)/2;
+
+            //shift origin of result to make sure it includes ROI
+
+    if (featuresRect.origin.x < result.origin.x )    //shift right?
+              result.origin.x = featuresRect.origin.x;
+    else
+        if ((featuresRect.origin.x + featuresRect.size.width)  
+               >  (result.origin.x + result.size.width))  //shift left?
+            result.origin.x = (featuresRect.origin.x + featuresRect.size.width)
+                            - result.size.width;
+
+    if (featuresRect.origin.y < result.origin.y )    //shift up?
+              result.origin.y = featuresRect.origin.y;
+    else
+        if ((featuresRect.origin.y + featuresRect.size.height)  
+                > (result.origin.y + result.size.height))  //shift down?
+            result.origin.y = (featuresRect.origin.y+featuresRect.size.height)
+                            - result.size.height;
+    return result;
+}
+"""
