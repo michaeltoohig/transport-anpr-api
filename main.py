@@ -15,9 +15,10 @@ from typing import Optional
 
 import typer
 import cv2 as cv
+import numpy as np
 
 from app.yolo_utils2 import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detection
-from app.wpod_utils import load_wpod_net, get_plate, draw_box
+from app.wpod_utils import load_wpod_net, get_plate
 
 cli = typer.Typer()
 
@@ -82,6 +83,7 @@ def images(
     ),
 ):
     yolo_net, yolo_labels, yolo_colors, yolo_layers = load_yolo_net()
+    wpod_net = load_wpod_net()
 
     for img_path in input_dir.glob('*.jpg'):  # XXX hardcoded filetype
         print(img_path)
@@ -139,6 +141,16 @@ def images(
             print(f"Final  x:{fx} y:{fy}, h:{fh} w:{fw}, r:{fw/fh}")
             vehicle_img = img[fy:fy+fh, fx:fx+fw].copy()
             cv.imshow("VehicleImage", vehicle_img)
+            # cv.waitKey(0)
+            try:
+                plate_images, _ = get_plate(wpod_net, vehicle_img)
+                for num, plate_img in enumerate(plate_images):
+                    img_float32 = np.float32(plate_img)
+                    plate_img = cv.cvtColor(img_float32, cv.COLOR_RGB2BGR)
+                    cv.imshow(f"Plate: {num}", plate_img)
+            except:
+                print('No plate found')
+                pass
             cv.waitKey(0)
 
 

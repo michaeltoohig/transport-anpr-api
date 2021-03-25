@@ -1,4 +1,5 @@
-# NOTE creates simple video with bounding boxes on the detected objects.
+# creates simple video with bounding boxes on the detected objects.
+# NOTE I think this is no longer working with the state of the current codebase.
 
 import cv2
 

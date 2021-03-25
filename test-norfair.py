@@ -96,6 +96,7 @@ if __name__ == '__main__':
                 for box in detections
                 # if box[-1] == 2
             ]
+            # TODO track detection is largest size within frame so far... save that frame and detection for cropping and try to get the plate
             tracked_objects = tracker.update(detections=detections)
             norfair.draw_points(frame, detections)
             norfair.draw_tracked_objects(frame, tracked_objects)
