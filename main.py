@@ -91,147 +91,56 @@ def images(
         detections = list(filter(lambda d: d["label"] in VEHICLE_CLASSES, detections))
 
         for num, obj in enumerate(detections):
-            print(obj)
             dx = obj["x"]
             dy = obj["y"]
             dh = obj["h"]
             dw = obj["w"]
 
+            # Adjust aspect ratio of bounding box
             fh = dh
             fw = dh * ASPECT_RATIO 
 
-            paddingRatio = 0.3
+            # Calculate bounding box padding
+            paddingRatio = 0.3  # XXX hardcoded
             fh += fh * paddingRatio
             fw += fw * paddingRatio
-            print(fh, fw, fw/fh)
 
-            print('x,y')
-            print(dx, dy)
+            # Center new larger bounding box over old one
             fy = dy + ((dh - fh) / 2)
             fx = int(dx + ((dw - fw) / 2))
-            print(fx, fy)
-            import pdb; pdb.set_trace()
 
             # Shift bounding area if it exceeds image frame
             if fx < 0:
-                print(f"{fx} less than zero")
-                # shift right
                 if abs(fx) + fw > w:
                     # width is greater than total width - adjust height and width
-                    continue
-                    pass
+                    fw = w
+                    fx = 0
+                    newHeight = fw / ASPECT_RATIO
+                    fy += ((fh - newHeight) / 2)
+                    fh = newHeight
                 else:
-                    fw += abs(fx)
+                    # shift right
                     fx = 0
 
             if fy < 0:
-                # shift down
                 if abs(fy) + fh > h:
                     # height is greater than total height - adjust height and width
-                    continue
-                    pass
+                    fh = h
+                    fy = 0
+                    newWidth = fh * ASPECT_RATIO
+                    fx += ((fw - newWidth) / 2)
+                    fw = newWidth
                 else:
-                    fh += abs(fy)
-                    fy = 0           
+                    # shift down
+                    fy = 0  
 
-            # if (dh < )
-
-            # # TODO crop with buffer area around detection in 4/3 aspect ratio
-            # print(obj)
-            # dx = max(obj["x"], 0)
-            # dy = max(obj["y"], 0)
-            # dh = obj["h"]
-            # dw = obj["w"]
-
-            # aspect = w / h
-            # if aspect > ASPECT_RATIO:
-            #     padding = round(dh * 0.2)
-            # else:
-            #     padding = round(dw * 0.2)
-
-            # dx = dx - padding
-            # dy = dy - padding
-            # dh = dh + (padding * 2)
-            # dw = dw + (padding * 2)
-            
-            # # if aspect > ASPECT_RATIO:
-            # #     # reduce width or increase height
-            # #     h = h + padding
-            # # else:
-            # #     # reduce height or increase width
-            # #     w = w + padding
-
-            print(dy, dh, dx, dw)
-            print(fy, fh, fx, fw)
-            if fh < 300 or fh < 300:
-                continue
-            vehicle_img = img[int(fy):int(fy+fh), int(fx):int(fx+fw)].copy()
+            fx, fy, fh, fw = int(fx), int(fy), int(fh), int(fw)
+            print(f"Detect x:{dx} y:{dy}, h:{dh} w:{dw}, r:{dw/dh}")
+            print(f"Final  x:{fx} y:{fy}, h:{fh} w:{fw}, r:{fw/fh}")
+            vehicle_img = img[fy:fy+fh, fx:fx+fw].copy()
             cv.imshow("VehicleImage", vehicle_img)
             cv.waitKey(0)
 
 
 if __name__ == "__main__":
     cli()
-
-
-"""
-requirements: must pad the roi, adjust bounding box to our desired aspect ratio, shift bounding box to within image limits at expense of padding
-
-https://stackoverflow.com/questions/14295885/algorithm-for-cropping-an-image-without-removing-a-specified-part-of-it
-Try to see if this points us in the right direction
-
--     (CGRect)cropSize:(CGSize)sourceSize 
-             toFitSize:(CGSize)fitSize
-   withoutCroppingRect:(CGRect)featuresRect
-{
-    CGRect result = CGRectZero;
-    BOOL fitSizeIsTaller;
-    CGFloat sourceRatio = sourceSize.width / sourceSize.height;
-    CGFloat fitRatio    = fitSize.width    / fitSize.height;
-     if (sourceRatio > fitRatio)
-            fitSizeIsTaller = YES;
-     else   fitSizeIsTaller = NO;
-
-        //size sourceRect to fitSize
-    if (fitSizeIsTaller){
-        result.size.width  = fitSize.width;
-        result.size.height = result.size.width / sourceRatio;
-    } else {
-        result.size.height = fitSize.height;
-        result.size.width  = result.size.height * sourceRatio;
-    }
-        //make sure it is at least as large as fitSize
-    if (result.size.height < featuresRect.size.height) {
-        result.size.height = featuresRect.size.height;
-        result.size.width  = result.size.height * sourceRatio;
-    }
-
-    if (result.size.width  < featuresRect.size.width) {
-        result.size.width  = featuresRect.size.width;
-        result.size.height = result.size.width / sourceRatio;
-    }
-
-            //locate resultRect in center
-    result.origin.x = (sourceSize.width  - result.size.width )/2;
-    result.origin.y = (sourceSize.height - result.size.height)/2;
-
-            //shift origin of result to make sure it includes ROI
-
-    if (featuresRect.origin.x < result.origin.x )    //shift right?
-              result.origin.x = featuresRect.origin.x;
-    else
-        if ((featuresRect.origin.x + featuresRect.size.width)  
-               >  (result.origin.x + result.size.width))  //shift left?
-            result.origin.x = (featuresRect.origin.x + featuresRect.size.width)
-                            - result.size.width;
-
-    if (featuresRect.origin.y < result.origin.y )    //shift up?
-              result.origin.y = featuresRect.origin.y;
-    else
-        if ((featuresRect.origin.y + featuresRect.size.height)  
-                > (result.origin.y + result.size.height))  //shift down?
-            result.origin.y = (featuresRect.origin.y+featuresRect.size.height)
-                            - result.size.height;
-    return result;
-}
-"""
