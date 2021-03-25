@@ -10,6 +10,7 @@ handling video files.
 # if __name__ == "__main__":
 #     commands.cli()
 
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -85,14 +86,20 @@ def images(
     yolo_net, yolo_labels, yolo_colors, yolo_layers = load_yolo_net()
     wpod_net = load_wpod_net()
 
+    now = datetime.now().timestamp()
+    output_path = output_dir / str(int(now))
+    output_path.mkdir(parents=True, exist_ok=False)
+
     for img_path in input_dir.glob('*.jpg'):  # XXX hardcoded filetype
-        print(img_path)
         img = cv.imread(str(img_path))
+        (output_path / img_path.stem).mkdir()
+        cv.imwrite(str(output_path / img_path.stem / f"original{img_path.suffix}" ), img)
         h, w = img.shape[:2]
         detections = detect_objects(yolo_net, yolo_labels, yolo_layers, yolo_colors, img)
         detections = list(filter(lambda d: d["label"] in VEHICLE_CLASSES, detections))
 
         for num, obj in enumerate(detections):
+            typer.echo("*" * 60)
             dx = obj["x"]
             dy = obj["y"]
             dh = obj["h"]
@@ -137,21 +144,24 @@ def images(
                     fy = 0  
 
             fx, fy, fh, fw = int(fx), int(fy), int(fh), int(fw)
-            print(f"Detect x:{dx} y:{dy}, h:{dh} w:{dw}, r:{dw/dh}")
-            print(f"Final  x:{fx} y:{fy}, h:{fh} w:{fw}, r:{fw/fh}")
+            typer.echo(f"Detect x:{dx} y:{dy}, h:{dh} w:{dw}, r:{dw/dh}")
+            typer.echo(f"Final  x:{fx} y:{fy}, h:{fh} w:{fw}, r:{fw/fh}")
             vehicle_img = img[fy:fy+fh, fx:fx+fw].copy()
-            cv.imshow("VehicleImage", vehicle_img)
-            # cv.waitKey(0)
+            # cv.imshow("VehicleImage", vehicle_img)
+            vehicle_img_path = output_path / img_path.stem / f"v{num:02}{img_path.suffix}"
+            cv.imwrite(str(vehicle_img_path), vehicle_img)
             try:
                 plate_images, _ = get_plate(wpod_net, vehicle_img)
-                for num, plate_img in enumerate(plate_images):
+                for num2, plate_img in enumerate(plate_images):
+                    print(f"plate {num2:02}")
                     img_float32 = np.float32(plate_img)
                     plate_img = cv.cvtColor(img_float32, cv.COLOR_RGB2BGR)
-                    cv.imshow(f"Plate: {num}", plate_img)
+                    # cv.imshow(f"Plate: {num}", plate_img)
+                    plate_img_path = output_path / img_path.stem / f"v{num:02}p{num2:02}{img_path.suffix}"
+                    cv.imwrite(str(plate_img_path), plate_img * 255)
             except:
-                print('No plate found')
-                pass
-            cv.waitKey(0)
+                typer.echo('No plate found')
+            # cv.waitKey(0)
 
 
 if __name__ == "__main__":
