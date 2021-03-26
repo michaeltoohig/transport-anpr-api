@@ -29,45 +29,52 @@ ASPECT_RATIO = 4 / 3
 def getCropDimensions(h: int, w: int, detection, padding: float = 0.2):
     dx = detection["x"]
     dy = detection["y"]
-    dw = detection["w"]
     dh = detection["h"]
-    # padding required
-    padw = padding * dw
-    padh = padding * dh 
+    dw = detection["w"]
+    typer.echo(f"Detect x:{dx} y:{dy}, h:{dh} w:{dw}, r:{dw/dh}")
 
-    max_width = max(w, (dw + (padw * 2)))
-    max_height = max(h, (dh + (padh * 2)))
+    # Adjust aspect ratio of bounding box
+    fh = dh
+    fw = dh * ASPECT_RATIO 
 
-    # crop dimensions
-    cx = dx - padw
-    cw = dw + padw
-    
-    adjust_right = None
-    if cx < 0:
-        # crop beyond left border of image
-        adjust_right = abs(cx)
-        cx = 0
-    adjust_left = None
-    if dx + cw > w:
-        # crop beyond right border of image
-        adjust_left = abs((dx + cw) - w)
-        cw = w
+    # Calculate bounding box padding
+    fh += fh * padding
+    fw += fw * padding
 
-    if adjust_right and adjust_left is None:
-        if adjust_right + cw < w:
-            cw = cw + adjust_right
-    
-    if adjust_left and adjust_left is None:
-        if cx - adjust_left > 0:
-            cw = cw - adjust_left
+    # Center new larger bounding box over old one
+    fy = dy + ((dh - fh) / 2)
+    fx = int(dx + ((dw - fw) / 2))
 
-    
-    cy = dy - padh
-    ch = dh + padh
-    
-    if ((cw / ch) > ASPECT_RATIO):
-        # more wide than tall - add to height
-        pass
+    # Shift bounding area if it exceeds image frame
+    if fx < 0:
+        if abs(fx) + fw > w:
+            # width is greater than frame width - adjust height and width
+            fw = w
+            fx = 0
+            newHeight = fw / ASPECT_RATIO
+            fy += ((fh - newHeight) / 2)
+            fh = newHeight
+        else:
+            # shift right
+            fx = 0
+
+    if fy < 0:
+        if abs(fy) + fh > h:
+            # height is greater than frame height - adjust height and width
+            fh = h
+            fy = 0
+            newWidth = fh * ASPECT_RATIO
+            fx += ((fw - newWidth) / 2)
+            fw = newWidth
+        else:
+            # shift down
+            fy = 0
+
+    # TODO shift up and shift left?
+
+    fx, fy, fh, fw = int(fx), int(fy), int(fh), int(fw)
+    typer.echo(f"Final  x:{fx} y:{fy}, h:{fh} w:{fw}, r:{fw/fh}")
+    return fx, fy, fh, fw
 
 
 @cli.command()
@@ -100,52 +107,7 @@ def images(
 
         for num, obj in enumerate(detections):
             typer.echo("*" * 60)
-            dx = obj["x"]
-            dy = obj["y"]
-            dh = obj["h"]
-            dw = obj["w"]
-
-            # Adjust aspect ratio of bounding box
-            fh = dh
-            fw = dh * ASPECT_RATIO 
-
-            # Calculate bounding box padding
-            paddingRatio = 0.3  # XXX hardcoded
-            fh += fh * paddingRatio
-            fw += fw * paddingRatio
-
-            # Center new larger bounding box over old one
-            fy = dy + ((dh - fh) / 2)
-            fx = int(dx + ((dw - fw) / 2))
-
-            # Shift bounding area if it exceeds image frame
-            if fx < 0:
-                if abs(fx) + fw > w:
-                    # width is greater than total width - adjust height and width
-                    fw = w
-                    fx = 0
-                    newHeight = fw / ASPECT_RATIO
-                    fy += ((fh - newHeight) / 2)
-                    fh = newHeight
-                else:
-                    # shift right
-                    fx = 0
-
-            if fy < 0:
-                if abs(fy) + fh > h:
-                    # height is greater than total height - adjust height and width
-                    fh = h
-                    fy = 0
-                    newWidth = fh * ASPECT_RATIO
-                    fx += ((fw - newWidth) / 2)
-                    fw = newWidth
-                else:
-                    # shift down
-                    fy = 0  
-
-            fx, fy, fh, fw = int(fx), int(fy), int(fh), int(fw)
-            typer.echo(f"Detect x:{dx} y:{dy}, h:{dh} w:{dw}, r:{dw/dh}")
-            typer.echo(f"Final  x:{fx} y:{fy}, h:{fh} w:{fw}, r:{fw/fh}")
+            fx, fy, fh, fw = getCropDimensions(h, w, obj)
             vehicle_img = img[fy:fy+fh, fx:fx+fw].copy()
             # cv.imshow("VehicleImage", vehicle_img)
             vehicle_img_path = output_path / img_path.stem / f"v{num:02}{img_path.suffix}"
