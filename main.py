@@ -10,13 +10,19 @@ handling video files.
 # if __name__ == "__main__":
 #     commands.cli()
 
+import io
+import re
+import os
+import base64
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+import PySimpleGUI as sg
 
 import typer
 import cv2 as cv
 import numpy as np
+import PIL
 
 from app.yolo_utils2 import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detection
 from app.wpod_utils import load_wpod_net, get_plate
@@ -24,6 +30,115 @@ from app.wpod_utils import load_wpod_net, get_plate
 cli = typer.Typer()
 
 ASPECT_RATIO = 4 / 3
+
+
+def convert_to_bytes(file_or_bytes, resize=None):
+    """
+    Will convert into bytes and optionally resize an image that is a file or a base64 bytes object.
+    Turns into  PNG format in the process so that can be displayed by tkinter
+    :param file_or_bytes: either a string filename or a bytes base64 image object
+    :type file_or_bytes:  (Union[str, bytes])
+    :param resize:  optional new size
+    :type resize: (Tuple[int, int] or None)
+    :return: (bytes) a byte-string object
+    :rtype: (bytes)
+    """
+    if isinstance(file_or_bytes, str):
+        img = PIL.Image.open(file_or_bytes)
+    else:
+        try:
+            img = PIL.Image.open(io.BytesIO(base64.b64decode(file_or_bytes)))
+        except Exception as e:
+            dataBytesIO = io.BytesIO(file_or_bytes)
+            img = PIL.Image.open(dataBytesIO)
+
+    cur_width, cur_height = img.size
+    if resize:
+        new_width, new_height = resize
+        scale = min(new_height/cur_height, new_width/cur_width)
+        img = img.resize((int(cur_width*scale), int(cur_height*scale)), PIL.Image.ANTIALIAS)
+    bio = io.BytesIO()
+    img.save(bio, format="PNG")
+    del img
+    return bio.getvalue()
+
+
+@cli.command()
+def classify():
+    # --------------------------------- Define Layout ---------------------------------
+    # First the window layout...2 columns
+
+    left_col = [
+        [sg.Text('Folder'), sg.In(size=(25,1), enable_events=True, key='-FOLDER-'), sg.FolderBrowse()],
+        [sg.Listbox(values=[], enable_events=True, size=(40,10), key='-IMAGE LIST-')],
+        [sg.Listbox(values=[], enable_events=True, size=(40,10), key='-VEHICLE LIST-')],
+    ]
+
+    # For now will only show the name of the file that was chosen
+    images_col = [[sg.Text('You choose from the list:')],
+                [sg.Text(size=(40,1), key='-TOUT-')],
+                [sg.Image(key='-IMAGE-')]]
+
+    # ----- Full layout -----
+    layout = [[sg.Column(left_col, element_justification='c'), sg.VSeperator(),sg.Column(images_col, element_justification='c')]]
+
+    # --------------------------------- Create Window ---------------------------------
+    window = sg.Window('Multiple Format Image Viewer', layout,resizable=True)
+
+    
+    # ----- Run the Event Loop -----
+    vehicle_image_pattern = re.compile('v\d\d\.')
+    plate_image_pattern = re.compile('v\d\dp\d\d\.')
+    # --------------------------------- Event Loop ---------------------------------
+    while True:
+        event, values = window.read()
+        if event in (sg.WIN_CLOSED, 'Exit'):
+            break
+        if event == sg.WIN_CLOSED or event == 'Exit':
+            break
+        if event == '-FOLDER-':                         # Folder name was filled in, make a list of image folders in the folder
+            folder = values['-FOLDER-']
+            try:
+                image_dir_list = os.listdir(folder)
+            except:
+                image_dir_list = []
+            # fnames = [f for f in file_list if os.path.isfile(
+            #     os.path.join(folder, f)) and f.lower().endswith((".png", ".jpg", "jpeg", ".tiff", ".bmp"))]
+            window['-IMAGE LIST-'].update(image_dir_list)
+        elif event == '-IMAGE LIST-':  # An image folder selected; show vehicles within
+            try:
+                # import pdb; pdb.set_trace()
+                image_dir = Path(values['-FOLDER-']) / values['-IMAGE LIST-'][0]
+                vehicle_images = [f.name for f in image_dir.glob('*') if f.is_file() and f.suffix.lower() in ['.png', '.jpg', '.jpeg', '.tiff', '.bmp'] and vehicle_image_pattern.match(f.name) is not None]
+                # import pdb; pdb.set_trace()
+                # window.['-TOUT-'].update(vehicle_images[0])
+                window['-VEHICLE LIST-'].update(vehicle_images)
+                # window['-IMAGE-'].update(data=convert_to_bytes(str(vehicle_images[0]), resize=(200, 200)))
+            except Exception as e:
+                print(f'**Error {e} **')
+                pass
+        elif event == '-VEHICLE LIST-':  # A vehicle image selected; show image and plates
+            try:
+                filename = Path(values['-FOLDER-']) / values['-IMAGE LIST-'][0] / values['-VEHICLE LIST-'][0]
+                window['-IMAGE-'].update(data=convert_to_bytes(str(filename), resize=(600, 600)))
+            except Exception as e:
+                print(f'**Error {e} **')
+                pass    
+
+        # elif event == '-FILE LIST-':    # A file was chosen from the listbox
+        #     try:
+        #         filename = os.path.join(values['-FOLDER-'], values['-FILE LIST-'][0])
+        #         window['-TOUT-'].update(filename)
+        #         if values['-W-'] and values['-H-']:
+        #             new_size = int(values['-W-']), int(values['-H-'])
+        #         else:
+        #             new_size = None
+        #         window['-IMAGE-'].update(data=convert_to_bytes(filename, resize=new_size))
+        #     except Exception as E:
+        #         print(f'** Error {E} **')
+        #         pass        # something weird happened making the full filename
+    # --------------------------------- Close & Exit ---------------------------------
+    window.close()
 
 
 def getCropDimensions(h: int, w: int, detection, padding: float = 0.2):
