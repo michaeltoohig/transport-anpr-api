@@ -3,6 +3,7 @@ __pycache__/
 .coverage
 .vscode/
 _images/
+output/
 
 /data/yolov3
 
@@ -11,3 +12,4 @@ _images/
 *.avi
 *.mp4
 *.jpg
+*.JPG
