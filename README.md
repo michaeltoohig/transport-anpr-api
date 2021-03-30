@@ -4,6 +4,8 @@ I plan this repo to house the code related to `AI` and return simple responses t
 
 I want this project to be well organized and it might also keep the materials for training the models and not just using the models so I can expand upon them when I get more local data to fine-tune the models.
 
+This also will contain some helper scripts so I can more easily process lots of images or videos and upload them to the main project API.
+
 ## Personal Thoughts
 
 I've seen a few different ways to detect the number plate including solely using a tranined YOLO model that depended upon the plates being regular which is not an option for my use case. I've also seen some implementations that do not affine the plate which caused the OCR to fail. To affine the plate seems like an obvious step to take; so was there a reason for that but I don't know yet?
