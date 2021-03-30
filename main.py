@@ -461,7 +461,64 @@ def upload(
         #         anprStatusUrl = data.get("statusUrl", "")
         # except:
         #     pass
-    
+
+
+import norfair
+from norfair import Detection, Tracker, Video
+
+
+def euclidean_distance(detection, tracked_object):
+    return np.linalg.norm(detection.points - tracked_object.estimate)
+
+
+def get_centroid(yolo_box, img_height, img_width):
+    # x1 = yolo_box[0] * img_width
+    # y1 = yolo_box[1] * img_height
+    # x2 = yolo_box[2] * img_width
+    # y2 = yolo_box[3] * img_height
+    x1 = yolo_box['x']
+    y1 = yolo_box['y']
+    x2 = yolo_box['x'] + yolo_box['w']
+    y2 = yolo_box['y'] + yolo_box['h']
+    return np.array([(x1 + x2) / 2, (y1 + y2) / 2])
+
+
+@cli.command()
+def video(
+    input_file: Path = typer.Argument(
+        ...,
+        file_okay=True,
+        dir_okay=False,
+    ),
+    output_file: Path = typer.Option(
+        "./output/norfair-test.mp4",
+        file_okay=True,
+        dir_okay=False,
+    ),
+    max_distance: int = typer.Option(60),
+    debug: bool = typer.Option(False),
+):
+    yolo_net, yolo_labels, yolo_colors, yolo_layers = load_yolo_net()
+
+    video = Video(input_path=str(input_file), output_path=str(output_file))
+    tracker = Tracker(
+        distance_function=euclidean_distance,
+        distance_threshold=max_distance,
+    )
+
+    for frame in video:
+        detections = detect_objects(yolo_net, yolo_labels, yolo_layers, yolo_colors, frame)
+        detections = list(filter(lambda d: d["label"] in VEHICLE_CLASSES, detections))
+        detections = [
+            Detection(get_centroid(box, frame.shape[0], frame.shape[1]), data=box)
+            for box in detections
+        ]
+        tracked_objects = tracker.update(detections=detections)
+        import pdb; pdb.set_trace()
+        norfair.draw_points(frame, detections)
+        norfair.draw_tracked_objects(frame, tracked_objects)
+        video.write(frame)
+
     
 if __name__ == "__main__":
     cli()
