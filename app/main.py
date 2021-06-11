@@ -6,17 +6,16 @@ from starlette.staticfiles import StaticFiles
 
 from app.api.endpoints_v1 import router as api_router
 from app.views.endpoints import router as web_router
-from app.core.config import IMAGE_DIRECTORY
+from app.core.config import IMAGE_DIRECTORY, CORS_ORIGINS
 
 app = FastAPI()
 
 origins = [
     "http://localhost:8080",
     "http://localhost:5000",
-    "https://anpr.vehiclerank.vu",
-    "https://vehiclerank.vu",
-    "https://staging.vehiclerank.vu",
 ]
+if CORS_ORIGINS:
+    origins.extend(CORS_ORIGINS)
 
 app.add_middleware(
     CORSMiddleware,
