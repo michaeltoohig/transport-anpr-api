@@ -12,7 +12,7 @@ from celery.signals import worker_process_init
 
 from app.core.config import IMAGE_DIRECTORY
 from app.core.celery_app import celery_app
-from app.yolo_utils2 import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detection
+from app.yolo_utils import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detection
 from app.wpod_utils import load_wpod_net, get_plate, draw_box
 from app.ocr_utils import load_ocr_net, get_prediction
 
@@ -52,6 +52,48 @@ def image_resize(img):
 # TODO split into multiple sub tasks - run a task chain on API side
 # one for collection detections from the image (which we can reuse in CLI)
 # another for saving files and thumbs in directories
+@celery_app.task(
+    base=BaseTask,
+    bind=True, 
+    acks_late=True,
+    soft_time_limit=10,
+    time_limit=15,
+)
+def run_yolo(self, filename: str) -> None:
+    filepath = Path(IMAGE_DIRECTORY) / self.request.id / filename
+    current_task.update_state(state="PROGRESS", meta={"progress": 0.1})
+
+    img = cv.imread(str(filepath))  # TODO move this into a helper function in yolo utils to handle using cv
+    detections = detect_objects(yolo_net, yolo_labels, yolo_layers, yolo_colors, img)
+    current_task.update_state(state="PROGRESS", meta={"progress": 0.7})
+
+    detections = list(filter(lambda d: d["label"] in VEHICLE_CLASSES, detections))
+
+    detections_img = draw_detections(img.copy(), detections)
+    save_path = filepath.parent / "detections.jpg"
+    cv.imwrite(str(save_path), detections_img)
+    detections_img_sm = image_resize(detections_img)
+    save_path = filepath.parent / "thumbs" / "detections.jpg"
+    save_path.parent.mkdir()
+    cv.imwrite(str(save_path), detections_img_sm)
+
+    save_directory = filepath.parent / "objects" 
+    if not save_directory.exists():
+        save_directory.mkdir()
+        (save_directory / "thumbs").mkdir()
+    for num, obj in enumerate(detections):
+        # Save JSON file with bounding box to original photo
+        (save_directory / f"{num+1}.json").write_text(json.dumps(obj))
+        # Save cropped image of detected object and thumbnail
+        image = crop_detection(img, obj)
+        cv.imwrite(str(save_directory / f"{num+1}.jpg"), image)  # TODO fix cv2 error from some non-jpg
+        image_sm = image_resize(image)
+        cv.imwrite(str(save_directory / "thumbs" / f"{num+1}.jpg"), image_sm)
+
+    return detections
+
+
+# New attempt to split into smaller re-usable tasks
 @celery_app.task(
     base=BaseTask,
     bind=True, 

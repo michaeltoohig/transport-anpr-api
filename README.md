@@ -1,10 +1,6 @@
 # Transport ANPR API
 
-I plan this repo to house the code related to `AI` and return simple responses to given images. Therefore the models and code will not clutter my main API which is responsible for users, vehicles, votes, comments, images, etc. 
-
-I want this project to be well organized and it might also keep the materials for training the models and not just using the models so I can expand upon them when I get more local data to fine-tune the models.
-
-This also will contain some helper scripts so I can more easily process lots of images or videos and upload them to the main project API.
+An API built with FastAPI and Celery for ANPR. Find the API and code related to ANPR in the `app` directory. The rest of this repo is a bit of a WIP to add scripts and a GUI for the ANPR models that I can use from my local machine.
 
 ## Personal Thoughts
 

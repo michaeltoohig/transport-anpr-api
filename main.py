@@ -3,6 +3,8 @@ Run the app locally via CLI.
 
 For batch processing directory of images or for
 handling video files.
+
+Please forgive sloppy code quality while I figure out how to use PySimpleGUI.
 """
 
 # import app.cli.main as commands
@@ -20,7 +22,6 @@ import requests
 from datetime import datetime
 from pathlib import Path
 import PySimpleGUI as sg
-from PySimpleGUI.PySimpleGUI import ColorChooserButton
 from typing import Optional
 
 import typer
@@ -28,7 +29,7 @@ import cv2 as cv
 import numpy as np
 import PIL
 
-from app.yolo_utils2 import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detection
+from app.yolo_utils import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detection
 from app.wpod_utils import draw_box, load_wpod_net, get_plate
 
 cli = typer.Typer()
@@ -39,7 +40,7 @@ ASPECT_RATIO = 4 / 3
 def convert_to_bytes(file_or_bytes, resize=None):
     """
     Will convert into bytes and optionally resize an image that is a file or a base64 bytes object.
-    Turns into  PNG format in the process so that can be displayed by tkinter
+    Turns into PNG format in the process so that can be displayed by tkinter
     :param file_or_bytes: either a string filename or a bytes base64 image object
     :type file_or_bytes:  (Union[str, bytes])
     :param resize:  optional new size
@@ -113,7 +114,6 @@ def handle_image_selection(window, directory, vehicle_data):
 
 def open_vehicle_data(directory):
     file = directory + '.json'
-    # import pdb; pdb.set_trace()
     if not os.path.exists(file):
         return {}
     with open(file, 'r') as f:
@@ -367,7 +367,7 @@ def upload(
         else:
             vote = 0
         try:
-            url = f"{api_base_url}/v1/vehicles/{plate}?checkExists=True"
+            url = f"{api_base_url}/v1/vehicles/checkPlateExists?plate={plate}"
             resp = requests.get(
                 url,
                 headers=headers,
