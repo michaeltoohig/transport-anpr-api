@@ -9,7 +9,7 @@ import subprocess
 import time
 import os
 
-from app.yolo_utils2 import detect_objects, draw_detections, load_yolo_net
+from app.yolo_utils import detect_objects, draw_detections, load_yolo_net
 
 FLAGS = []
 

@@ -48,7 +48,7 @@ def get_prediction(model, labels, plate_img):
 
     cont, _  = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # creat a copy version "test_roi" of plate_image to draw bounding box
+    # creat a copy of plate_image to draw bounding box
     test_roi = plate_image.copy()
 
     # Initialize a list which will be used to append charater image

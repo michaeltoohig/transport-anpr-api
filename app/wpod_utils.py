@@ -1,4 +1,4 @@
-import cv2
+import cv2 as cv
 import numpy as np
 from keras.models import model_from_json
 
@@ -197,7 +197,7 @@ def reconstruct(I, Iresized, Yr, lp_threshold):
             t_ptsh = getRectPts(0, 0, out_size[0], out_size[1])
             ptsh = np.concatenate((label.pts * getWH(I.shape).reshape((2, 1)), np.ones((1, 4))))
             H = find_T_matrix(ptsh, t_ptsh)
-            Ilp = cv2.warpPerspective(I, H, out_size, borderValue=0)
+            Ilp = cv.warpPerspective(I, H, out_size, borderValue=0)
             TLp.append(Ilp)
             Cor.append(ptsh)
     return final_labels, TLp, lp_type, Cor
@@ -217,7 +217,7 @@ def detect_plate(net, img, max_dim, lp_threshold):
     min_dim_img = min(img.shape[:2])
     factor = float(max_dim) / min_dim_img
     w, h = (np.array(img.shape[1::-1], dtype=float) * factor).astype(int).tolist()
-    img_resized = cv2.resize(img, (w, h))
+    img_resized = cv.resize(img, (w, h))
     T = img_resized.copy()
     T = T.reshape((1, T.shape[0], T.shape[1], T.shape[2]))
     Yr = net.predict(T)
@@ -225,13 +225,16 @@ def detect_plate(net, img, max_dim, lp_threshold):
     L, TLp, lp_type, Cor = reconstruct(img, img_resized, Yr, lp_threshold)
     return L, TLp, lp_type, Cor
 
-def preprocess_image(img, resize=False):
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    # img = cv2.bitwise_not(img)  # TODO determine if bitwise_not is required if plate is white on black or reverse
+
+def preprocess_image(f, resize=False):
+    img = f if isinstance(f, np.ndarray) else cv.imread(str(f))
+    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+    # img = cv.bitwise_not(img)  # TODO determine if bitwise_not is required if plate is white on black or reverse
     img = img / 255
     if resize:
-        img = cv2.resize(img, (224,224))
+        img = cv.resize(img, (224,224))
     return img
+
 
 def draw_box(image_path, cor, thickness=3): 
     pts=[]  
@@ -240,22 +243,25 @@ def draw_box(image_path, cor, thickness=3):
     # store the top-left, top-right, bottom-left, bottom-right 
     # of the plate license respectively
     for i in range(4):
-        pts.append([int(x_coordinates[i]),int(y_coordinates[i])])
+        pts.append([int(x_coordinates[i]), int(y_coordinates[i])])
     
     pts = np.array(pts, np.int32)
-    pts = pts.reshape((-1,1,2))
+    pts = pts.reshape((-1, 1, 2))
     vehicle_image = preprocess_image(image_path)
     
-    cv2.polylines(vehicle_image,[pts],True,(0,255,0),thickness)
+    cv.polylines(vehicle_image, [pts], True, (0, 255, 0), thickness)
     return vehicle_image
 
-def get_plate(net, img, Dmax=608, Dmin = 608):
+
+def get_plate(net, f, Dmax=608, Dmin = 608):
+    img = f if isinstance(f, np.ndarray) else cv.imread(str(f))
     vehicle_img = preprocess_image(img)
     ratio = float(max(vehicle_img.shape[:2])) / min(vehicle_img.shape[:2])
     side = int(ratio * Dmin)
     bound_dim = min(side, Dmax)
     _, plate_img, _, cor = detect_plate(net, vehicle_img, bound_dim, lp_threshold=0.5)
     return plate_img, cor
+
 
 def load_wpod_net():
     wpod_net_path = "data/wpod-net.json"

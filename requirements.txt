@@ -10,6 +10,7 @@ colorgram.py
 # Web
 python-dotenv
 fastapi
+gunicorn
 uvicorn
 python-multipart
 celery[redis]

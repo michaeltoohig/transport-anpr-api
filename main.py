@@ -28,8 +28,8 @@ import cv2 as cv
 import numpy as np
 import PIL
 
-from app.yolo_utils2 import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detection
-from app.wpod_utils import draw_box, load_wpod_net, get_plate
+from app.yolo_utils import VEHICLE_CLASSES, load_yolo_net, detect_objects, draw_detections, crop_detection
+from app.wpod_utils import load_wpod_net, get_plate
 
 cli = typer.Typer()
 
@@ -113,7 +113,6 @@ def handle_image_selection(window, directory, vehicle_data):
 
 def open_vehicle_data(directory):
     file = directory + '.json'
-    # import pdb; pdb.set_trace()
     if not os.path.exists(file):
         return {}
     with open(file, 'r') as f:
@@ -130,6 +129,10 @@ def save_vehicle_data(directory, data):
 def classify(
     folder: Path = typer.Argument("./output")
 ):
+    """
+    GUI for processing the output of either ``images`` or ``video`` commands.
+    Prepares an output ready the ``upload`` command.
+    """
     # --------------------------------- Define Layout ---------------------------------
     left_col = [
         [sg.Text('Folder'), sg.In(size=(15,1), enable_events=True, key='-FOLDER-'), sg.FolderBrowse(initial_folder=str(folder))],
@@ -279,6 +282,10 @@ def images(
     ),
     debug: bool = typer.Option(False),
 ):
+    """
+    Runs ANPR detection for all images of a directory.
+    Ouputs a directory that is ready for the GUI in the ``classify`` command.
+    """
     yolo_net, yolo_labels, yolo_colors, yolo_layers = load_yolo_net()
     wpod_net = load_wpod_net()
 
@@ -330,6 +337,9 @@ def upload(
     api_base_url: str = typer.Option("http://localhost:5000", envvar="API_BASE_URL"),
     token: Optional[str] = typer.Option(None, envvar="API_AUTH_TOKEN"),
 ):
+    """
+    Upload classified images from the output of the ``classify`` command.
+    """
     with open(input_file, "r") as f:
         vehicles = json.load(f)
 
@@ -367,7 +377,7 @@ def upload(
         else:
             vote = 0
         try:
-            url = f"{api_base_url}/v1/vehicles/{plate}?checkExists=True"
+            url = f"{api_base_url}/v1/vehicles/checkExists?plate={plate}"
             resp = requests.get(
                 url,
                 headers=headers,
@@ -416,7 +426,6 @@ def upload(
                     headers=headers,  # {"Authorization": f"Bearer {token}"},
                     timeout=30,
                 )
-                # import pdb; pdb.set_trace()
                 if resp.status_code == 200:
                     url = resp.json().get("data").get("statusUrl")
                     progress = 0
@@ -438,8 +447,9 @@ def upload(
                             image=dict(
                                 filename=filename,
                             ),
-                            # comment=dict(body=comment),  # not yet collected
-                            vote=dict(vote=vote),
+                            vote=vote,
+                            # comment=comment,  # not yet collected
+                            #vehicle_make_id=vehicle_make_id,  # not yet collected
                         ),
                         timeout=5,
                     )
@@ -498,6 +508,14 @@ def video(
     max_distance: int = typer.Option(60),
     debug: bool = typer.Option(False),
 ):
+    """
+    Runs vehicle detection on frames of a video.
+    Outputs a directory of images ready for processing with the ``images`` command.
+
+    XXX not actually ready yet, I'm currently testing `norfair` package which tracks
+    detections through time so I can be smart about outputing only the largest and 
+    most clear frame of a vehicle rather than many similiar frames of the same vehicle.
+    """
     yolo_net, yolo_labels, yolo_colors, yolo_layers = load_yolo_net()
 
     video = Video(input_path=str(input_file), output_path=str(output_file))

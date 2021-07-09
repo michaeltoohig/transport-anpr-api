@@ -19,7 +19,13 @@ async def post_detect_image(
 ) -> Any:
     taskId, filename = image
     task = run_yolo.apply_async(kwargs={"filename": filename}, task_id=taskId)
-    return dict(taskId=task.id, statusUrl=request.url_for("detect-vehicles-results", taskId=task.id))
+    return dict(
+        taskId=task.id,
+        statusUrl=request.url_for(
+            "detect-vehicles-results",
+            taskId=task.id,
+        )
+    )
 
 
 @router.get("/detect/vehicles/{taskId}", name="detect-vehicles-results")
@@ -36,13 +42,20 @@ async def get_detect_image(
     elif job.state == "SUCCESS":
         detections_thumb = request.url_for("images", path=f"{taskId}/thumbs/detections.jpg")
         detected_objs = []
+        # for file in (Path(IMAGE_DIRECTORY) / taskId / "objects" / "thumbs").iterdir():
         for file in os.listdir(str(Path(IMAGE_DIRECTORY) / taskId / "objects" / "thumbs")):
-            obj = {}
             url = request.url_for("images", path=f"{taskId}/objects/thumbs/{file}")
-            obj["src"] = url
-            obj["file"] = file
+            obj = dict(src=url, file=file)
             detected_objs.append(obj)
-        return dict(status=job.state, progress=1, image=detections_thumb, objs=detected_objs, taskId=taskId, detectPlateUrl=request.url_for("detect-plate"), detectColoursUrl=request.url_for("detect-colours"))
+        return dict(
+            status=job.state,
+            progress=1,
+            image=detections_thumb,
+            objs=detected_objs,
+            taskId=taskId,
+            detectPlateUrl=request.url_for("detect-plate"),
+            detectColoursUrl=request.url_for("detect-colours"),
+        )
     else:
         return dict(status="FAILURE", progress=1)
 
@@ -55,8 +68,20 @@ async def post_detect_plate_image(
     # token: str = Query(...),
 ) -> Any:
     taskId, filename = image
-    task = run_wpod.apply_async(kwargs={"filename": filename, "makePrediction": makePrediction}, task_id=taskId)
-    return dict(taskId=task.id, statusUrl=request.url_for("detect-plate-results", taskId=task.id))
+    task = run_wpod.apply_async(
+        kwargs={
+            "filename": filename,
+            "makePrediction": makePrediction,
+        },
+        task_id=taskId,
+    )
+    return dict(
+        taskId=task.id,
+        statusUrl=request.url_for(
+            "detect-plate-results",
+            taskId=task.id,
+        )
+    )
 
 
 @router.get("/detect/plate/{taskId}", name="detect-plate-results")
@@ -74,7 +99,13 @@ async def get_detect_plate(
         vehicle_image = request.url_for("images", path=f"{taskId}/thumbs/vehicle.jpg")
         plate_image = request.url_for("images", path=f"{taskId}/plate.jpg")
         prediction = job.result if job.result else ""
-        return dict(status=job.state, progress=1, vehicle=vehicle_image, plate=plate_image, prediction=prediction)
+        return dict(
+            status=job.state,
+            progress=1,
+            vehicle=vehicle_image,
+            plate=plate_image,
+            prediction=prediction,
+        )
     else:
         return dict(status="FAILURE", progress=1)
 
@@ -87,12 +118,17 @@ async def post_predict_plate_image(
 ) -> Any:
     taskId, filename = image
     task = run_ocr.apply_async(kwargs={"filename": filename}, task_id=taskId)
-    return dict(taskId=task.id, statusUrl=request.url_for("predict-plate-results", taskId=task.id))
+    return dict(
+        taskId=task.id,
+        statusUrl=request.url_for(
+            "predict-plate-results",
+            taskId=task.id,
+        )
+    )
 
 
 @router.get("/predict/plate/{taskId}", name="predict-plate-results")
 async def get_predict_plate(
-    request: Request,
     taskId: str,
     # token: str = Query(...),
 ) -> Any:
@@ -121,7 +157,6 @@ async def post_detect_colours(
 
 @router.get("/detect/colours/{taskId}", name="detect-colours-results")
 async def get_detect_colours(
-    request: Request,
     taskId: str,
     # token: str = Query(...),
 ) -> Any:

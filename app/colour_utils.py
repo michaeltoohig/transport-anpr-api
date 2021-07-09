@@ -38,6 +38,7 @@ def convert_rgb_xyz(rgb: dict) -> dict:
     Z = r * 0.0193 + g * 0.1192 + b * 0.9505
     return dict(x=X, y=Y, z=Z)
 
+
 def convert_rgb_lab(rgb: dict) -> dict:
     """
     Convert RGB to LAB colour space.
@@ -101,6 +102,7 @@ def convert_rgb_hsl(rgb: dict) -> dict:
         H = 4.0 + gc - rc
     H = (H / 6.0) % 1.0
     return dict(h=H, s=S, l=L)
+
 
 def distance(c1, c2) -> int:
     """

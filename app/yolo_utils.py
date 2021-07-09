@@ -36,7 +36,8 @@ def generate_boxes_confidences_classids(outs, height, width, tconf):
 
     return boxes, confidences, classids
 
-def detect_objects(net, labels, layer_names, colors, img, show_time: bool=False, confidence_threshold: float=0.5, threshold: float=0.3):
+def detect_objects(net, labels, layer_names, colors, f, show_time: bool=False, confidence_threshold: float=0.5, threshold: float=0.3):
+    img = f if isinstance(f, np.ndarray) else cv.imread(str(f))
     
     # Contructing a blob from the input image
     blob = cv.dnn.blobFromImage(img, 1 / 255.0, (416, 416), swapRB=True, crop=False)
@@ -92,7 +93,8 @@ def detect_objects(net, labels, layer_names, colors, img, show_time: bool=False,
             ))
     return detections
 
-def draw_detections(img, detections):
+def draw_detections(f, detections):
+    img = f if isinstance(f, np.ndarray) else cv.imread(str(f))
     for obj in detections:
         label = obj.get("label")
         color = obj.get("color")
@@ -107,7 +109,8 @@ def draw_detections(img, detections):
         cv.putText(img, text, (x, y-5), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
     return img
 
-def crop_detection(img, detection):
+def crop_detection(f, detection):
+    img = f if isinstance(f, np.ndarray) else cv.imread(str(f))
     x = detection.get("x")
     y = detection.get("y")
     w = detection.get("w")
